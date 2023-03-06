@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
-public abstract class Unit : MonoBehaviour
+public class Unit : MonoBehaviour
 {
     protected float maxHealth;
     protected float health;
@@ -23,8 +23,8 @@ public abstract class Unit : MonoBehaviour
     // Start is called before the first frame update
     protected virtual void Start()
     {
-        physicalActions = new HashSet<Action>();
-        magicalActions = new HashSet<Action>();
+        if(physicalActions == null) physicalActions = new HashSet<Action>();
+        if(magicalActions == null) magicalActions = new HashSet<Action>();
         foreach (Action c in gameObject.GetComponents(typeof(Action)))
         {
             if(c.GetDamageType() == DTypes.Slashing || c.GetDamageType() == DTypes.Piercing || c.GetDamageType() == DTypes.Bludgeoning)
@@ -126,5 +126,21 @@ public abstract class Unit : MonoBehaviour
 
     public void RemoveMagicalAction(Action action) { if (action.GetManaCost() > 0) magicalActions.Remove(action); }
 
-
+    public void SetAttributes(Unit u)
+    {
+        maxHealth = u.maxHealth;
+        health = u.health;
+        maxMana = u.maxMana;
+        mana = u.mana;
+        speed = u.speed;
+        physDefence = u.physDefence;
+        magicDefence = u.magicDefence;
+        strength = u.strength;
+        magicStrength = u.magicStrength;
+        immunities = u.immunities;
+        resistances = u.resistances;
+        vulnerabilities = u.vulnerabilities;
+        physicalActions = u.physicalActions;
+        magicalActions = u.magicalActions;
+    }
 }
