@@ -15,8 +15,11 @@ public class Unit : MonoBehaviour
     protected float strength;
     protected float magicStrength;
     protected HashSet<DTypes> immunities;
+    protected HashSet<DTypes> originalImmunities;
     protected HashSet<DTypes> resistances;
+    protected HashSet<DTypes> originalResistances;
     protected HashSet<DTypes> vulnerabilities;
+    protected HashSet<DTypes> originalVulnerabilities;
     protected HashSet<Action> physicalActions;
     protected HashSet<Action> magicalActions;
 
@@ -44,9 +47,13 @@ public class Unit : MonoBehaviour
         
     }
 
-    public void Damage(float damage)
+    public void Damage(float damage, DTypes dType, TurnHandler th)
     {
         health -= damage;
+        if(dType == DTypes.Poison)
+        {
+            th.AddEffect(this, Effect.Poisoned, 3);
+        }
         if(health < 0) health = 0;
     }
 
@@ -62,6 +69,8 @@ public class Unit : MonoBehaviour
 
     public void SetMaxHealth(float f) { maxHealth = f; }
 
+    public float GetHealthPercentage() { return health / maxHealth; }
+
     public float GetMana() { return mana; }
 
     public void AddMana(float f)
@@ -74,13 +83,26 @@ public class Unit : MonoBehaviour
 
     public void SetMaxMana(float f) { maxMana = f; }
 
+    public float GetManaPercentage() { return mana / maxMana; }
+
     public float GetSpeed() { return speed; }
 
     public void SetSpeed(float f) { speed = f; }
 
-    public float GetPhysDefence() { return physDefence; }
+    public void AddSpeed(float f) { speed += f; }
+
+    public float GetPhysDefence() {
+        if (physDefence == 0) return 1;
+        if(physDefence < 0)
+        {
+            return 1 - physDefence/1000;
+        }
+        return physDefence; 
+    }
 
     public void SetPhysDefence(float f) { physDefence = f; }
+
+    public void AddPhysDefence(float f) { physDefence += f; }
 
     public float GetMagicDefence() { return magicDefence; }
 
@@ -95,6 +117,8 @@ public class Unit : MonoBehaviour
     public float GetMagicStrength() { return magicStrength; }
 
     public void SetMagicStrength(float f) { magicStrength = f; }
+
+    public void AddMagicStrength(float f) { magicStrength += f; }
 
     public HashSet<DTypes> GetImmunities() { return immunities; }
 
@@ -126,6 +150,30 @@ public class Unit : MonoBehaviour
 
     public void RemoveMagicalAction(Action action) { if (action.GetManaCost() > 0) magicalActions.Remove(action); }
 
+    public void ResetResistances(List<DTypes> types)
+    {
+        foreach(DTypes dtype in types)
+        {
+            if(!originalResistances.Contains(dtype)) resistances.Remove(dtype);
+        }
+    }
+
+    public void ResetImmunities(List<DTypes> types)
+    {
+        foreach (DTypes dtype in types)
+        {
+            if (!originalImmunities.Contains(dtype)) immunities.Remove(dtype);
+        }
+    }
+
+    public void ResetVulnerabilities(List<DTypes> types)
+    {
+        foreach (DTypes dtype in types)
+        {
+            if (!originalVulnerabilities.Contains(dtype)) vulnerabilities.Remove(dtype);
+        }
+    }
+
     public void SetAttributes(Unit u)
     {
         maxHealth = u.maxHealth;
@@ -138,8 +186,11 @@ public class Unit : MonoBehaviour
         strength = u.strength;
         magicStrength = u.magicStrength;
         immunities = u.immunities;
+        originalImmunities = u.originalImmunities;
         resistances = u.resistances;
+        originalResistances = u.originalResistances;
         vulnerabilities = u.vulnerabilities;
+        originalVulnerabilities = u.originalVulnerabilities;
         physicalActions = u.physicalActions;
         magicalActions = u.magicalActions;
     }

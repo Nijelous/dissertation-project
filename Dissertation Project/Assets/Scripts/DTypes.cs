@@ -11,7 +11,10 @@ public enum DTypes
     Poison,
     Radiant,
     Holy,
+    Wind,
+    Arcane,
     Slashing,
     Bludgeoning,
-    Piercing
+    Piercing,
+    Null
 }

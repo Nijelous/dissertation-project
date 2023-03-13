@@ -8,7 +8,7 @@ public class SecondWind : Action
     void Start()
     {
         actionName = "Second Wind";
-        manaCost = 20;
+        manaCost = 10;
         priority = 0;
         type = DTypes.Holy;
         originalType = type;
@@ -21,13 +21,18 @@ public class SecondWind : Action
         
     }
 
-    public override void Act(Unit caster, Unit enemy)
+    public override void Act(Unit caster, Unit enemy, TurnHandler th)
     {
         caster.AddHealth(basePotency + (caster.GetMagicStrength() / 10));
     }
 
-    public override void ActionEffect(Unit caster, Unit enemy)
+    public override ActionDetails ActionEffect()
     {
-        throw new System.NotImplementedException();
+        return new ActionDetails()
+        {
+            types = new ActionTypes[] { ActionTypes.Healing },
+            potency = basePotency,
+            effect = Effect.Null
+        };
     }
 }

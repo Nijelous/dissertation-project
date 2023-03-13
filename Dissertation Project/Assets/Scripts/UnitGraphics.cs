@@ -26,6 +26,11 @@ public class UnitGraphics : MonoBehaviour
         bars.transform.GetChild(1).GetComponent<Text>().text = Mathf.Ceil(unit.GetHealth()) + "/" + unit.GetMaxHealth();
         bars.transform.GetChild(2).GetComponent<RectTransform>().sizeDelta = new Vector2(manaPercentage * 200, 30);
         bars.transform.GetChild(3).GetComponent<Text>().text = Mathf.Ceil(unit.GetMana()) + "/" + unit.GetMaxMana();
-        //bars.transform.GetChild(4).GetComponent<Text>().text = unit.name;
+        bars.transform.GetChild(4).GetComponent<Text>().text = unit.name;
+    }
+
+    public void SetUnit(Unit u)
+    {
+        unit = u;
     }
 }

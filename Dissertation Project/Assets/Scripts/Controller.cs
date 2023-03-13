@@ -54,9 +54,14 @@ public class Controller : MonoBehaviour
 
     private int round = 1;
 
+    [SerializeField]
+    private GameObject evolutionGO;
+
     private Evolution evolution;
 
     private bool evaluating = true;
+
+    private Candidate candidate;
 
     public void SetController(Unit player1, Unit player2, ControlType ct1, ControlType ct2, TurnHandler th, bool quickCombat, float waitTime)
     {
@@ -70,13 +75,21 @@ public class Controller : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         if (quickCombat) waitTime = 0;
         if(ct1 == ControlType.GeneticPair)
         {
             evolution = GameObject.Find("Evolution").GetComponent<Evolution>();
             evaluating = false;
+        }
+        if(ct1 == ControlType.GeneticSolo || ct2 == ControlType.GeneticSolo)
+        {
+            evolution = evolutionGO.GetComponent<Evolution>();
+            evolution.EvolutionSet(player1, player2);
+            evolution.gameObject.SetActive(true);
+            evaluating = false;
+            playerSelect.SetActive(false);
         }
         StartCoroutine(LateStart());
     }
@@ -106,11 +119,33 @@ public class Controller : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(ct1 == ControlType.GeneticSolo && evolution.HasFoundBest() && !evaluating)
+        {
+            candidate = evolution.GetBestCandidate(0);
+            GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Set");
+            for(int i = 0; i < gameObjects.Length; i++)
+            {
+                Destroy(gameObjects[i]);
+            }
+            playerSelect.SetActive(true);
+            evaluating = true;
+        }
+        else if(ct2 == ControlType.GeneticSolo && evolution.HasFoundBest() && !evaluating)
+        {
+            candidate = evolution.GetBestCandidate(1);
+            GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Set");
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                Destroy(gameObjects[i]);
+            }
+            playerSelect.SetActive(true);
+            evaluating = true;
+        }
         if(ct1 != ControlType.Human && ct2 != ControlType.Human &&  evaluating && !roundRunning && !hasWinner)
         {
             // AI vs AI
             roundRunning = true;
-            StartCoroutine(TakeTurn(GetTurnAction(player1, ct1, 0), GetTurnAction(player2, ct2, 1)));
+            StartCoroutine(TakeTurn(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1)));
         }
     }
 
@@ -142,11 +177,11 @@ public class Controller : MonoBehaviour
     {
         Action a = null;
         if(isPlayer1Turn) {
-            GetActionFromInt(action, player1);
+            a = GetActionFromInt(action, player1);
         }
         else
         {
-            GetActionFromInt(action, player2);
+            a = GetActionFromInt(action, player2);
         }
         if (ct1 == ControlType.Human && ct2 == ControlType.Human)
         {
@@ -166,11 +201,11 @@ public class Controller : MonoBehaviour
         {
             if (ct1 == ControlType.Human)
             {
-                StartCoroutine(TakeTurn(a, GetTurnAction(player2, ct2, 0)));
+                StartCoroutine(TakeTurn(a, GetTurnAction(player2, player1, ct2, 0)));
             }
             else if (ct2 == ControlType.Human)
             {
-                StartCoroutine(TakeTurn(GetTurnAction(player1, ct1, 0), a));
+                StartCoroutine(TakeTurn(GetTurnAction(player1, player2, ct1, 0), a));
             }
         }
     }
@@ -188,7 +223,7 @@ public class Controller : MonoBehaviour
         }
         return null;
     }
-    public Action GetTurnAction(Unit unit, ControlType ct, int playerTurn)
+    public Action GetTurnAction(Unit unit, Unit enemy, ControlType ct, int playerTurn)
     {
         switch (ct)
         {
@@ -208,13 +243,15 @@ public class Controller : MonoBehaviour
                     }
                     else
                     {
-                        return GetTurnAction(unit, ct, 0);
+                        return GetTurnAction(unit, enemy, ct, 0);
                     }
                 }
             case ControlType.Human:
                 return unit.GetPhysicalActions().ToArray()[0];
             case ControlType.GeneticPair:
-                return GetActionFromInt(evolution.GetCandidateAction(int.Parse(gameObject.name[4..]), playerTurn, unit), unit);
+                return GetActionFromInt(evolution.GetCandidateAction(int.Parse(gameObject.name[4..]), playerTurn, unit, enemy, th), unit);
+            case ControlType.GeneticSolo:
+                return GetActionFromInt(candidate.GetCandidateAction(unit, enemy, th), unit);
         }
         return null;
     }
@@ -289,16 +326,25 @@ public class Controller : MonoBehaviour
 
     public void Round(Unit caster, Unit enemy, Action action)
     {
-        if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " used " + action.GetActionName();
-        if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " used " + action.GetActionName());
-        caster.AddMana(-action.GetManaCost());
-        action.Act(caster, enemy);
-        if(caster.GetHealth() == 0) {
-            Win(enemy, caster);
-        }
-        else if(enemy.GetHealth() == 0)
+        if (th.CheckForEffect(caster, Effect.Stunned) == -1)
         {
-            Win(caster, enemy);
+            if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " used " + action.GetActionName();
+            if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " used " + action.GetActionName());
+            caster.AddMana(-action.GetManaCost());
+            action.Act(caster, enemy, th);
+            if (caster.GetHealth() == 0)
+            {
+                Win(enemy, caster);
+            }
+            else if (enemy.GetHealth() == 0)
+            {
+                Win(caster, enemy);
+            }
+        }
+        else
+        {
+            if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " is Stunned, and cannot move";
+            if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " is Stunned, and cannot move");
         }
     }
 

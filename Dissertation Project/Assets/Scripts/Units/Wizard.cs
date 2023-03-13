@@ -2,21 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Fighter : Unit
+public class Wizard : Unit
 {
     // Start is called before the first frame update
     protected override void Start()
     {
         base.Start();
-        maxHealth = 100;
+        maxHealth = 60;
         health = maxHealth;
-        maxMana = 20;
+        maxMana = 100;
         mana = maxMana;
-        speed = 30;
-        physDefence = 40;
-        magicDefence = 30;
-        strength = 30;
-        magicStrength = 10;
+        speed = 35;
+        physDefence = 15;
+        magicDefence = 15;
+        strength = 10;
+        magicStrength = 50;
         immunities = new HashSet<DTypes>();
         originalImmunities = new HashSet<DTypes>();
         resistances = new HashSet<DTypes>();
@@ -28,6 +28,6 @@ public class Fighter : Unit
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 }

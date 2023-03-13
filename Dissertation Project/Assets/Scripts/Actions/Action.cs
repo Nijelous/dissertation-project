@@ -2,6 +2,23 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ActionTypes
+{
+    Attack,
+    Healing,
+    ManaRecovery,
+    Buff,
+    Status,
+    AppliedEffect
+}
+
+public class ActionDetails
+{
+    public ActionTypes[] types;
+    public float potency;
+    public Effect effect;
+}
+
 public abstract class Action : MonoBehaviour
 {
     protected string actionName;
@@ -23,9 +40,9 @@ public abstract class Action : MonoBehaviour
         
     }
 
-    public abstract void Act(Unit caster, Unit enemy);
+    public abstract void Act(Unit caster, Unit enemy, TurnHandler th);
 
-    public abstract void ActionEffect(Unit caster, Unit enemy);
+    public abstract ActionDetails ActionEffect();
 
     public float GetManaCost() { return manaCost; }
 
@@ -51,9 +68,9 @@ public abstract class Action : MonoBehaviour
     {
         if (unit.GetImmunities().Contains(type)) return 0;
 
-        else if (unit.GetResistances().Contains(type)) return 0.5f;
+        else if (unit.GetResistances().Contains(type) && !unit.GetVulnerabilities().Contains(type)) return 0.5f;
 
-        else if (unit.GetVulnerabilities().Contains(type)) return 2;
+        else if (!unit.GetResistances().Contains(type) && unit.GetVulnerabilities().Contains(type)) return 2;
 
         return 1;
     }
