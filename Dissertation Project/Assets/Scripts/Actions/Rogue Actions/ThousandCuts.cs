@@ -12,7 +12,7 @@ public class ThousandCuts : Action
         priority = 0;
         type = DTypes.Piercing;
         originalType = type;
-        basePotency = 10;
+        basePotency = 7;
     }
 
     // Update is called once per frame

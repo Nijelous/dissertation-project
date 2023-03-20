@@ -7,7 +7,7 @@ public class Steal : Action
     // Start is called before the first frame update
     void Start()
     {
-        actionName = "Thousand Cuts";
+        actionName = "Steal";
         manaCost = 0;
         priority = 0;
         type = DTypes.Slashing;
@@ -23,8 +23,8 @@ public class Steal : Action
 
     public override void Act(Unit caster, Unit enemy, TurnHandler th)
     {
-        float manaGain = 0;
-        if(enemy.GetMana() < basePotency)
+        float manaGain;
+        if (enemy.GetMana() < basePotency)
         {
             if (caster.GetMaxMana() - caster.GetMana() < enemy.GetMana())
             {

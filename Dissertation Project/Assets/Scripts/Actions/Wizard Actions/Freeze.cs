@@ -7,7 +7,7 @@ public class Freeze : Action
     // Start is called before the first frame update
     void Start()
     {
-        actionName = "Stun Dart";
+        actionName = "Freeze";
         manaCost = 80;
         priority = 0;
         type = DTypes.Ice;

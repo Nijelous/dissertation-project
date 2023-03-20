@@ -19,15 +19,18 @@ public class Setup : MonoBehaviour
     {
         carrier = GameObject.Find("Carrier");
         if (carrier == null) Destroy(gameObject);
-        Carrier c = carrier.GetComponent<Carrier>();
-        c.player1.transform.parent = player1.transform;
-        player1.GetComponent<UnitGraphics>().SetUnit(c.player1.GetComponent<Unit>());
-        c.player2.transform.parent = player2.transform;
-        player2.GetComponent<UnitGraphics>().SetUnit(c.player2.GetComponent<Unit>());
-        controller.SetController(c.player1.GetComponent<Unit>(), c.player2.GetComponent<Unit>(), c.ct1, c.ct2, GameObject.Find("TurnHandler").GetComponent<TurnHandler>(), false, 3);
-        controller.gameObject.SetActive(true);
-        player1.SetActive(true);
-        player2.SetActive(true);
+        else
+        {
+            Carrier c = carrier.GetComponent<Carrier>();
+            c.player1.transform.parent = player1.transform;
+            player1.GetComponent<UnitGraphics>().SetUnit(c.player1.GetComponent<Unit>());
+            c.player2.transform.parent = player2.transform;
+            player2.GetComponent<UnitGraphics>().SetUnit(c.player2.GetComponent<Unit>());
+            controller.SetController(c.player1.GetComponent<Unit>(), c.player2.GetComponent<Unit>(), c.ct1, c.ct2, GameObject.Find("TurnHandler").GetComponent<TurnHandler>(), false, 3);
+            controller.gameObject.SetActive(true);
+            player1.SetActive(true);
+            player2.SetActive(true);
+        }
     }
 
     // Update is called once per frame

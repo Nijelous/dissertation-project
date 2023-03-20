@@ -8,6 +8,7 @@ public class Wizard : Unit
     protected override void Start()
     {
         base.Start();
+        unitName = "Wizard";
         maxHealth = 60;
         health = maxHealth;
         maxMana = 100;
@@ -16,18 +17,12 @@ public class Wizard : Unit
         physDefence = 15;
         magicDefence = 15;
         strength = 10;
-        magicStrength = 50;
+        magicStrength = 45;
         immunities = new HashSet<DTypes>();
         originalImmunities = new HashSet<DTypes>();
         resistances = new HashSet<DTypes>();
         originalResistances = new HashSet<DTypes>();
         vulnerabilities = new HashSet<DTypes>();
         originalVulnerabilities = new HashSet<DTypes>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 }

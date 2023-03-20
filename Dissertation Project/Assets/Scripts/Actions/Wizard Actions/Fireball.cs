@@ -12,7 +12,7 @@ public class Fireball : Action
         priority = 0;
         type = DTypes.Fire;
         originalType = type;
-        basePotency = 70;
+        basePotency = 60;
     }
 
     // Update is called once per frame

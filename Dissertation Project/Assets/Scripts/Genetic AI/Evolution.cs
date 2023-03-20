@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,8 @@ public class Evolution : MonoBehaviour
     private int startPopulation = 2;
     [SerializeField]
     private bool showEvolution;
+    [SerializeField]
+    private CandidateType candidateType;
     [SerializeField]
     private GameObject canvas;
     [SerializeField]
@@ -55,6 +58,10 @@ public class Evolution : MonoBehaviour
     private int[] lastAverageWeights;
     private List<int> totalAverageChanges;
     private bool bestFound = false;
+    [SerializeField]
+    private GameObject dropdownMenu;
+    [SerializeField]
+    private int advancedTurnsRemembered;
     // Start is called before the first frame update
     void Awake()
     {
@@ -65,81 +72,119 @@ public class Evolution : MonoBehaviour
         fitness = new List<float>(new float[startPopulation]);
         GenerateCandidates(candidatesP1);
         GenerateCandidates(candidatesP2);
+        int weightLength = candidatesP1[0].GetWeightsLength();
         if (showEvolution)
         {
             playerSelect.SetActive(false);
             player1.GetComponent<SpriteRenderer>().enabled = false;
             player2.GetComponent<SpriteRenderer>().enabled = false;
-            for(int i = 0; i < startPopulation/2; i++)
+            if (candidateType == CandidateType.Basic)
             {
+                for (int i = 0; i < startPopulation / 2; i++)
+                {
+                    GameObject parent = Instantiate(setPrefab, canvas.transform);
+                    parent.name = "Set " + i;
+                    parent.transform.localPosition = new Vector3(0, 0, 0);
+                    sets.Add(parent);
+                    GameObject bar1 = Instantiate(player1Bars);
+                    bar1.transform.SetParent(parent.transform);
+                    bar1.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
+                    bar1.GetComponent<RectTransform>().localPosition = new Vector3(-525 + 228 * (i % 5), 200 - 45 * (i / 5), 0);
+                    GameObject bar2 = Instantiate(player2Bars);
+                    bar2.transform.SetParent(parent.transform);
+                    bar2.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
+                    bar2.GetComponent<RectTransform>().localPosition = new Vector3(-415 + 228 * (i % 5), 200 - 45 * (i / 5), 0);
+                    GameObject vs = Instantiate(roundNumber);
+                    vs.transform.SetParent(parent.transform);
+                    vs.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
+                    vs.GetComponent<RectTransform>().localPosition = new Vector3(-470 + 228 * (i % 5), 180 - 45 * (i / 5), 0);
+                    vs.GetComponent<Text>().text = "VS";
+                }
+            }
+            else if(candidateType == CandidateType.Advanced)
+            {
+                dropdownMenu.SetActive(true);
                 GameObject parent = Instantiate(setPrefab, canvas.transform);
-                parent.name = "Set " + i;
+                parent.name = "Set 0";
                 parent.transform.localPosition = new Vector3(0, 0, 0);
                 sets.Add(parent);
                 GameObject bar1 = Instantiate(player1Bars);
                 bar1.transform.SetParent(parent.transform);
                 bar1.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
-                bar1.GetComponent<RectTransform>().localPosition = new Vector3(-525 + 228 * (i % 5), 200 - 45 * (i / 5), 0);
+                bar1.GetComponent<RectTransform>().localPosition = new Vector3(500, 250, 0);
                 GameObject bar2 = Instantiate(player2Bars);
                 bar2.transform.SetParent(parent.transform);
                 bar2.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
-                bar2.GetComponent<RectTransform>().localPosition = new Vector3(-415 + 228 * (i % 5), 200 - 45 * (i / 5), 0);
+                bar2.GetComponent<RectTransform>().localPosition = new Vector3(500, 190, 0);
                 GameObject vs = Instantiate(roundNumber);
                 vs.transform.SetParent(parent.transform);
                 vs.GetComponent<RectTransform>().localScale = new Vector3(0.4f, 0.4f, 1);
-                vs.GetComponent<RectTransform>().localPosition = new Vector3(-470 + 228 * (i % 5), 180 - 45 * (i / 5), 0);
+                vs.GetComponent<RectTransform>().localPosition = new Vector3(500, 215, 0);
                 vs.GetComponent<Text>().text = "VS";
+                for (int i = 1; i < startPopulation / 2; i++)
+                {
+                    parent = Instantiate(setPrefab, canvas.transform);
+                    parent.name = "Set " + i;
+                    sets.Add(parent);
+                    bar1 = new();
+                    bar1.transform.parent = parent.transform;
+                    bar2 = new();
+                    bar2.transform.parent = parent.transform;
+                }
             }
-            roundNumber.transform.localPosition = new Vector3(123, 234, 0);
+            roundNumber.transform.localPosition = candidateType == CandidateType.Basic ? new Vector3(123, 234, 0) : new Vector3(500, 150, 0);
+            if (candidateType == CandidateType.Advanced) roundNumber.GetComponent<Text>().fontSize = 25;
             generationNumber = Instantiate(roundNumber, canvas.transform);
-            generationNumber.transform.localPosition = new Vector3(-123, 234, 0);
+            generationNumber.transform.localPosition = candidateType == CandidateType.Basic ? new Vector3(-123, 234, 0) : new Vector3(500, 125, 0);
+            if (candidateType == CandidateType.Advanced) generationNumber.GetComponent<Text>().fontSize = 20;
             generationNumber.GetComponent<Text>().text = "Generation " + generationCount;
             player1Bars.SetActive(false);
             player2Bars.SetActive(false);
-            averageWeights = new GameObject[] {Instantiate(roundNumber, canvas.transform),  Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), 
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),  Instantiate(roundNumber, canvas.transform), 
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),
-                Instantiate(roundNumber, canvas.transform),  Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform),  Instantiate(roundNumber, canvas.transform), 
-                Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform) };
-            initialAverageWeights = new int[26];
-            lastAverageWeights = new int[26];
-            for(int i = 0; i < 14; i++)
+            averageWeights = new GameObject[weightLength*2];
+            initialAverageWeights = new int[weightLength*2];
+            lastAverageWeights = new int[weightLength*2];
+            for(int i = 0; i < initialAverageWeights.Length; i++)
             {
+                averageWeights[i] = Instantiate(roundNumber, canvas.transform);
                 averageWeights[i].name = "AverageWeights " + i;
-                averageWeights[i].GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25);
-                averageWeights[i].GetComponent<RectTransform>().localPosition = new Vector3(-480 + ((i%7)*30), 253 - ((i/7) * 25), 0);
-                averageWeights[i].GetComponent<Text>().text = "0";
-                averageWeights[i].GetComponent<Text>().fontSize = 20;
-            }
-            for(int i = 0; i < averageWeights.Length-14; i++)
-            {
-                averageWeights[i+14].name = "AverageWeights " + (i+14);
-                averageWeights[i+14].GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25);
-                averageWeights[i+14].GetComponent<RectTransform>().localPosition = new Vector3(205 + ((i % 6) * 30), 253 - ((i / 6) * 25), 0);
-                averageWeights[i+14].GetComponent<Text>().text = "0";
-                averageWeights[i+14].GetComponent<Text>().fontSize = 20;
+                averageWeights[i].tag = "Weight";
+                if (candidateType == CandidateType.Basic)
+                {
+                    averageWeights[i].GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25);
+                    if (i % 13 < 7) averageWeights[i].GetComponent<RectTransform>().localPosition = new Vector3(-480 + ((i % 13) * 30), 253 - ((i / 13) * 25), 0);
+                    else averageWeights[i].GetComponent<RectTransform>().localPosition = new Vector3(205 + (((i - 7) % 13) * 30), 253 - ((i / 13) * 25), 0);
+                    averageWeights[i].GetComponent<Text>().text = "0";
+                    averageWeights[i].GetComponent<Text>().fontSize = 20;
+                }
+                else if(candidateType == CandidateType.Advanced)
+                {
+                    int j = i % weightLength;
+                    averageWeights[i].GetComponent<RectTransform>().sizeDelta = new Vector2(12, 11);
+                    averageWeights[i].GetComponent<RectTransform>().localPosition = new Vector3(-565.5f + (((j%70) * 13) + (((j%70) / 7) * 9)), 261 - ((j / 70) * 11), 0);
+                    averageWeights[i].GetComponent<Text>().text = "0";
+                    averageWeights[i].GetComponent<Text>().fontSize = i < weightLength ? 10 : 11;
+                }
             }
             totalAverageChanges = new List<int>();
-            for(int i = 0; i < 6; i++)
+            if (candidateType == CandidateType.Basic)
             {
-                GameObject typeDisplay = Instantiate(roundNumber, canvas.transform);
-                typeDisplay.name = "TypeDisplay " + i;
-                typeDisplay.GetComponent<RectTransform>().sizeDelta = new Vector2(45, 16);
-                typeDisplay.GetComponent<RectTransform>().localPosition = new Vector3(456 + ((i % 3) * 45), 253 - ((i / 3) * 16), 0);
-                switch (i)
+                for (int i = 0; i < 6; i++)
                 {
-                    case 0: typeDisplay.GetComponent<Text>().text = "DMG"; break;
-                    case 1: typeDisplay.GetComponent<Text>().text = "HEAL"; break;
-                    case 2: typeDisplay.GetComponent<Text>().text = "MANA"; break;
-                    case 3: typeDisplay.GetComponent<Text>().text = "BUFF"; break;
-                    case 4: typeDisplay.GetComponent<Text>().text = "STAT"; break;
-                    case 5: typeDisplay.GetComponent<Text>().text = "USED"; break;
+                    GameObject typeDisplay = Instantiate(roundNumber, canvas.transform);
+                    typeDisplay.name = "TypeDisplay " + i;
+                    typeDisplay.GetComponent<RectTransform>().sizeDelta = new Vector2(45, 16);
+                    typeDisplay.GetComponent<RectTransform>().localPosition = new Vector3(456 + ((i % 3) * 45), 253 - ((i / 3) * 16), 0);
+                    switch (i)
+                    {
+                        case 0: typeDisplay.GetComponent<Text>().text = "DMG"; break;
+                        case 1: typeDisplay.GetComponent<Text>().text = "HEAL"; break;
+                        case 2: typeDisplay.GetComponent<Text>().text = "MANA"; break;
+                        case 3: typeDisplay.GetComponent<Text>().text = "BUFF"; break;
+                        case 4: typeDisplay.GetComponent<Text>().text = "STAT"; break;
+                        case 5: typeDisplay.GetComponent<Text>().text = "USED"; break;
+                    }
+                    typeDisplay.GetComponent<Text>().fontSize = 14;
                 }
-                typeDisplay.GetComponent<Text>().fontSize = 14;
             }
         }
         else 
@@ -165,7 +210,7 @@ public class Evolution : MonoBehaviour
                 Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform), Instantiate(roundNumber, canvas.transform) };
             initialAverageWeights = new int[26];
             lastAverageWeights = new int[26];
-            for(int i = 0; i < 26; i++)
+            for(int i = 0; i < initialAverageWeights.Length; i++)
             {
                 averageWeights[i].GetComponent<RectTransform>().sizeDelta = new Vector2(25, 25);
                 averageWeights[i].tag = "Set";
@@ -184,10 +229,10 @@ public class Evolution : MonoBehaviour
         {
             Unit u1 = set.transform.GetChild(0).gameObject.AddComponent<Unit>();
             u1.SetAttributes(unit1);
-            if(showEvolution) set.transform.GetChild(0).gameObject.AddComponent<UnitGraphics>();
+            if(showEvolution && (candidateType == CandidateType.Basic || set.name == "Set 0")) set.transform.GetChild(0).gameObject.AddComponent<UnitGraphics>();
             Unit u2 = set.transform.GetChild(1).gameObject.AddComponent<Unit>();
             u2.SetAttributes(unit2);
-            if (showEvolution) set.transform.GetChild(1).gameObject.AddComponent<UnitGraphics>();
+            if (showEvolution && (candidateType == CandidateType.Basic || set.name == "Set 0")) set.transform.GetChild(1).gameObject.AddComponent<UnitGraphics>();
             set.GetComponent<Controller>().SetController(u1, u2, ControlType.GeneticPair, ControlType.GeneticPair, set.GetComponent<TurnHandler>(), quickCombat, waitTime);
         }
         if (showEvolution)
@@ -197,7 +242,7 @@ public class Evolution : MonoBehaviour
                 GameObject display = Instantiate(roundNumber, canvas.transform);
                 display.name = "ActionDisplay " + i;
                 display.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 20);
-                display.GetComponent<RectTransform>().localPosition = new Vector3(-450 + ((i % 7) * 150), -234 - ((i / 7) * 20), 0);
+                display.GetComponent<RectTransform>().localPosition = new Vector3(-450 + ((i % 7) * 150), -237 - ((i / 7) * 20), 0);
                 display.GetComponent<Text>().fontSize = 18;
                 if (i < 7)
                 {
@@ -218,7 +263,7 @@ public class Evolution : MonoBehaviour
     {
         for(int i = 0; i < startPopulation/2; i++)
         {
-            candidates.Add(new Candidate());
+            candidates.Add(new Candidate(candidateType, advancedTurnsRemembered));
         }
     }
 
@@ -345,16 +390,11 @@ public class Evolution : MonoBehaviour
         {
             previousAverageWeightsTotal += int.Parse(averageWeights[i].GetComponent<Text>().text);
             List<Candidate> candidates;
-            if(i < 14) candidates = i < 7 ? candidatesP1 : candidatesP2;
-            else candidates = i - 14 < 6 ? candidatesP1 : candidatesP2;
+            candidates = i < 13 ? candidatesP1 : candidatesP2;
             int total = 0;
             for(int j = 0; j < startPopulation/2; j++)
             {
-                if (i < 14) total += candidates[j].GetActionWeight(i % 7);
-                else
-                {
-                    total += candidates[j].GetTypeWeightByInt((i - 14) % 6);
-                }
+                total += candidates[j].GetWeight(i%13);
             }
             total /= startPopulation/2;
             currentAverageWeightsTotal += total;
@@ -394,8 +434,16 @@ public class Evolution : MonoBehaviour
             evaluatingSets.Add(set);
             if (showEvolution)
             {
-                set.transform.GetChild(0).name = candidatesP1[i].GetWeightsAsString();
-                set.transform.GetChild(1).name = candidatesP2[i++].GetWeightsAsString();
+                if (candidateType == CandidateType.Basic)
+                {
+                    set.transform.GetChild(0).name = candidatesP1[i].GetWeightsAsString();
+                    set.transform.GetChild(1).name = candidatesP2[i++].GetWeightsAsString();
+                }
+                else
+                {
+                    set.transform.GetChild(0).name = unit1.GetUnitName() + " 1";
+                    set.transform.GetChild(1).name = unit2.GetUnitName() + " 2";
+                }
             }
             set.GetComponent<Controller>().ResetBattle();
             set.GetComponent<Controller>().Evaluate();
@@ -472,33 +520,67 @@ public class Evolution : MonoBehaviour
 
     private void BestFound()
     {
-        Debug.Log("Player 1 Weights: " + unit1.GetPhysicalActions().ToArray()[0].GetActionName() + " " +  lastAverageWeights[0] + " | " 
-            + unit1.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[1] + " | "
-            + unit1.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[2] + " | "
-            + unit1.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[3] + " | "
-            + unit1.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[4] + " | "
-            + unit1.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[5] + " | "
-            + unit1.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[6] + " | "
-            + "Damage Priority" + " " + lastAverageWeights[14] + " | "
-            + "Healing Priority" + " " + lastAverageWeights[15] + " | "
-            + "Mana Regen Priority" + " " + lastAverageWeights[16] + " | "
-            + "Buff Priority" + " " + lastAverageWeights[17] + " | "
-            + "Status Effect Priority" + " " + lastAverageWeights[18] + " | "
-            + "Applied Effect Priority" + " " + lastAverageWeights[19] + " | ");
+        if (candidateType == CandidateType.Basic)
+        {
+            Debug.Log("Player 1 Weights: " + unit1.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[0] + " | "
+                + unit1.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[1] + " | "
+                + unit1.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[2] + " | "
+                + unit1.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[3] + " | "
+                + unit1.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[4] + " | "
+                + unit1.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[5] + " | "
+                + unit1.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[6] + " | "
+                + "Damage Priority" + " " + lastAverageWeights[7] + " | "
+                + "Healing Priority" + " " + lastAverageWeights[8] + " | "
+                + "Mana Regen Priority" + " " + lastAverageWeights[9] + " | "
+                + "Buff Priority" + " " + lastAverageWeights[10] + " | "
+                + "Status Effect Priority" + " " + lastAverageWeights[11] + " | "
+                + "Applied Effect Priority" + " " + lastAverageWeights[12] + " | ");
 
-        Debug.Log("Player 2 Weights: " + unit2.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[7] + " | "
-            + unit2.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[8] + " | "
-            + unit2.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[9] + " | "
-            + unit2.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[10] + " | "
-            + unit2.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[11] + " | "
-            + unit2.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[12] + " | "
-            + unit2.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[13] + " | "
-            + "Damage Priority" + " " + lastAverageWeights[20] + " | "
-            + "Healing Priority" + " " + lastAverageWeights[21] + " | "
-            + "Mana Regen Priority" + " " + lastAverageWeights[22] + " | "
-            + "Buff Priority" + " " + lastAverageWeights[23] + " | "
-            + "Status Effect Priority" + " " + lastAverageWeights[24] + " | "
-            + "Applied Effect Priority" + " " + lastAverageWeights[25] + " | ");
+            Debug.Log("Player 2 Weights: " + unit2.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[13] + " | "
+                + unit2.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[14] + " | "
+                + unit2.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[15] + " | "
+                + unit2.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[16] + " | "
+                + unit2.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[17] + " | "
+                + unit2.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[18] + " | "
+                + unit2.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[19] + " | "
+                + "Damage Priority" + " " + lastAverageWeights[20] + " | "
+                + "Healing Priority" + " " + lastAverageWeights[21] + " | "
+                + "Mana Regen Priority" + " " + lastAverageWeights[22] + " | "
+                + "Buff Priority" + " " + lastAverageWeights[23] + " | "
+                + "Status Effect Priority" + " " + lastAverageWeights[24] + " | "
+                + "Applied Effect Priority" + " " + lastAverageWeights[25] + " | ");
+        }
+        else
+        {
+            Debug.Log("Done");
+        }
+        string path1;
+        string path2;
+        string complexity = "";
+        if (candidateType == CandidateType.Basic) complexity = "Basic";
+        else if (candidateType == CandidateType.Advanced) complexity = "Advanced";
+        if (unit1.GetUnitName() == unit2.GetUnitName())
+        {
+            path1 = Application.dataPath + "/Best Candidates/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity + "-1";
+            path2 = Application.dataPath + "/Best Candidates/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + complexity + "-2";
+        }
+        else
+        {
+            path1 = Application.dataPath + "/Best Candidates/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity;
+            path2 = Application.dataPath + "/Best Candidates/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + complexity;
+        }
+        File.WriteAllText(path1, GetBestWeightsAsString(0));
+        File.WriteAllText(path2, GetBestWeightsAsString(1));
+    }
+
+    private string GetBestWeightsAsString(int candidate)
+    {
+        string res = "";
+        for (int i = 0; i < lastAverageWeights.Length / 2; i++)
+        {
+            res += lastAverageWeights[i + (candidate*(lastAverageWeights.Length/2))] + " ";
+        }
+        return res;
     }
 
     public bool HasFoundBest()
@@ -508,21 +590,22 @@ public class Evolution : MonoBehaviour
 
     public Candidate GetBestCandidate(int i)
     {
+        int[] weights = new int[lastAverageWeights.Length/2];
         if(i == 0)
         {
-            return new Candidate(new int[] { lastAverageWeights[0], lastAverageWeights[1], lastAverageWeights[2], 
-                lastAverageWeights[3], lastAverageWeights[4], lastAverageWeights[5], lastAverageWeights[6] }, 
-                new int[] { lastAverageWeights[14], lastAverageWeights[15], lastAverageWeights[16], lastAverageWeights[17],
-                lastAverageWeights[18], lastAverageWeights[19]});
+            for(int j = 0; j < weights.Length; j++)
+            {
+                weights[j] = lastAverageWeights[j];
+            }
         }
         else if(i == 1)
         {
-            return new Candidate(new int[] { lastAverageWeights[7], lastAverageWeights[8], lastAverageWeights[9],
-                lastAverageWeights[10], lastAverageWeights[11], lastAverageWeights[12], lastAverageWeights[13] },
-                new int[] { lastAverageWeights[20], lastAverageWeights[21], lastAverageWeights[22], lastAverageWeights[23],
-                lastAverageWeights[24], lastAverageWeights[25]});
+            for (int j = 0; j < weights.Length; j++)
+            {
+                weights[j] = lastAverageWeights[j+weights.Length];
+            }
         }
-        return null;
+        return new Candidate(weights);
     }
 
     public void EvolutionSet(Unit unit1, Unit unit2)

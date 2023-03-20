@@ -12,7 +12,7 @@ public class StunDart : Action
         priority = 1;
         type = DTypes.Lightning;
         originalType = type;
-        basePotency = 20;
+        basePotency = 10;
     }
 
     // Update is called once per frame
@@ -27,7 +27,7 @@ public class StunDart : Action
 
         float vulnerability = CheckResistance(type, enemy);
 
-        float damage = (caster.GetStrength() / enemy.GetPhysDefence()) * basePotency * vulnerability * crit * Random.Range(0.85f, 1);
+        float damage = (caster.GetMagicStrength() / enemy.GetMagicDefence()) * basePotency * vulnerability * crit * Random.Range(0.85f, 1);
 
         enemy.Damage(damage, type, th);
 

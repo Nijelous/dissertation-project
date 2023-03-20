@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Linq;
 using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
+    protected string unitName;
     protected float maxHealth;
     protected float health;
     protected float maxMana;
@@ -26,25 +27,43 @@ public class Unit : MonoBehaviour
     // Start is called before the first frame update
     protected virtual void Start()
     {
-        if(physicalActions == null) physicalActions = new HashSet<Action>();
-        if(magicalActions == null) magicalActions = new HashSet<Action>();
-        foreach (Action c in gameObject.GetComponents(typeof(Action)))
+        if (physicalActions == null || magicalActions == null || physicalActions.Count == 0 || magicalActions.Count == 0)
         {
-            if(c.GetDamageType() == DTypes.Slashing || c.GetDamageType() == DTypes.Piercing || c.GetDamageType() == DTypes.Bludgeoning)
+            physicalActions = new HashSet<Action>();
+            magicalActions = new HashSet<Action>();
+            foreach (Action c in gameObject.GetComponents(typeof(Action)).Cast<Action>())
             {
-                physicalActions.Add(c);
-            }
-            else
-            {
-                magicalActions.Add(c);
+                if (c.GetDamageType() == DTypes.Slashing || c.GetDamageType() == DTypes.Piercing || c.GetDamageType() == DTypes.Bludgeoning)
+                {
+                    physicalActions.Add(c);
+                }
+                else
+                {
+                    magicalActions.Add(c);
+                }
             }
         }
     }
 
     // Update is called once per frame
-    void Update()
+    protected virtual void Update()
     {
-        
+        if (physicalActions == null || magicalActions == null || physicalActions.Count == 0 || magicalActions.Count == 0)
+        {
+            physicalActions = new HashSet<Action>();
+            magicalActions = new HashSet<Action>();
+            foreach (Action c in gameObject.GetComponents(typeof(Action)).Cast<Action>())
+            {
+                if (c.GetDamageType() == DTypes.Slashing || c.GetDamageType() == DTypes.Piercing || c.GetDamageType() == DTypes.Bludgeoning)
+                {
+                    physicalActions.Add(c);
+                }
+                else
+                {
+                    magicalActions.Add(c);
+                }
+            }
+        }
     }
 
     public void Damage(float damage, DTypes dType, TurnHandler th)
@@ -56,6 +75,8 @@ public class Unit : MonoBehaviour
         }
         if(health < 0) health = 0;
     }
+
+    public string GetUnitName() { return unitName; }
 
     public float GetHealth() { return health; }
 

@@ -12,7 +12,7 @@ public class LightningStrike : Action
         priority = 0;
         type = DTypes.Lightning;
         originalType = type;
-        basePotency = 50;
+        basePotency = 45;
     }
 
     // Update is called once per frame

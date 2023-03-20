@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
@@ -11,7 +12,8 @@ public enum ControlType
     Human,
     Random,
     GeneticPair,
-    GeneticSolo
+    GeneticSoloBasic,
+    GeneticSoloAdvanced
 }
 public class Controller : MonoBehaviour
 {
@@ -61,7 +63,11 @@ public class Controller : MonoBehaviour
 
     private bool evaluating = true;
 
-    private Candidate candidate;
+    private Candidate candidate1;
+
+    private Candidate candidate2;
+
+    private int[] actionsUsed;
 
     public void SetController(Unit player1, Unit player2, ControlType ct1, ControlType ct2, TurnHandler th, bool quickCombat, float waitTime)
     {
@@ -77,19 +83,12 @@ public class Controller : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        actionsUsed = new int[2];
         if (quickCombat) waitTime = 0;
         if(ct1 == ControlType.GeneticPair)
         {
             evolution = GameObject.Find("Evolution").GetComponent<Evolution>();
             evaluating = false;
-        }
-        if(ct1 == ControlType.GeneticSolo || ct2 == ControlType.GeneticSolo)
-        {
-            evolution = evolutionGO.GetComponent<Evolution>();
-            evolution.EvolutionSet(player1, player2);
-            evolution.gameObject.SetActive(true);
-            evaluating = false;
-            playerSelect.SetActive(false);
         }
         StartCoroutine(LateStart());
     }
@@ -113,39 +112,93 @@ public class Controller : MonoBehaviour
                 playerSelect.SetActive(false);
             }
         }
+        if (ct1 == ControlType.GeneticSoloBasic || ct1 == ControlType.GeneticSoloAdvanced)
+        {
+            string path;
+            string geneString;
+            string complexity = "";
+            if (ct1 == ControlType.GeneticSoloBasic) complexity = "Basic";
+            else if (ct1 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+            if (player1.GetUnitName() == player2.GetUnitName())
+            {
+                path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-1";
+            }
+            else
+            {
+                path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity;
+            }
+            StreamReader sr = new(path);
+            geneString = sr.ReadToEnd();
+            sr.Close();
+            int[] genes = new int[geneString.Count(x => x == ' ')];
+            int j = 0;
+            for(int i = 0; i < genes.Length; i++)
+            {
+                bool flag = false;
+                int start = j;
+                while (!flag)
+                {
+                    if (geneString[j] == ' ')
+                    {
+                        flag = true;
+                        genes[i] = int.Parse(geneString[start..j]);
+                    }
+                    j++;
+                }
+            }
+            candidate1 = new Candidate(genes);
+        }
+        if (ct2 == ControlType.GeneticSoloBasic || ct2 == ControlType.GeneticSoloAdvanced)
+        {
+            string path;
+            string geneString;
+            string complexity = "";
+            if (ct2 == ControlType.GeneticSoloBasic) complexity = "Basic";
+            else if (ct2 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+            if (player1.GetUnitName() == player2.GetUnitName())
+            {
+                path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity + "-2";
+            }
+            else
+            {
+                path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity;
+            }
+            StreamReader sr = new(path);
+            geneString = sr.ReadToEnd();
+            sr.Close();
+            Debug.Log(geneString);
+            int[] genes = new int[geneString.Count(x => x == ' ')];
+            int j = 0;
+            for (int i = 0; i < genes.Length; i++)
+            {
+                bool flag = false;
+                int start = j;
+                while (!flag)
+                {
+                    if (geneString[j] == ' ')
+                    {
+                        flag = true;
+                        genes[i] = int.Parse(geneString[start..j]);
+                    }
+                    j++;
+                }
+            }
+            candidate2 = new Candidate(genes);
+            Debug.Log(candidate2.GetWeightsAsString());
+            Debug.Log(candidate2.GetTypeWeightsAsString());
+        }
         roundRunning = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if(ct1 == ControlType.GeneticSolo && evolution.HasFoundBest() && !evaluating)
-        {
-            candidate = evolution.GetBestCandidate(0);
-            GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Set");
-            for(int i = 0; i < gameObjects.Length; i++)
-            {
-                Destroy(gameObjects[i]);
-            }
-            playerSelect.SetActive(true);
-            evaluating = true;
-        }
-        else if(ct2 == ControlType.GeneticSolo && evolution.HasFoundBest() && !evaluating)
-        {
-            candidate = evolution.GetBestCandidate(1);
-            GameObject[] gameObjects = GameObject.FindGameObjectsWithTag("Set");
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                Destroy(gameObjects[i]);
-            }
-            playerSelect.SetActive(true);
-            evaluating = true;
-        }
         if(ct1 != ControlType.Human && ct2 != ControlType.Human &&  evaluating && !roundRunning && !hasWinner)
         {
             // AI vs AI
             roundRunning = true;
-            StartCoroutine(TakeTurn(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1)));
+            if (ct1 == ControlType.GeneticPair) TakeTurnAI(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1));
+            else StartCoroutine(TakeTurn(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1)));
         }
     }
 
@@ -194,6 +247,7 @@ public class Controller : MonoBehaviour
             else
             {
                 StartCoroutine(TakeTurn(player1Action, a));
+                isPlayer1Turn = true;
                 SetButtons(player1);
             }
         }
@@ -201,7 +255,7 @@ public class Controller : MonoBehaviour
         {
             if (ct1 == ControlType.Human)
             {
-                StartCoroutine(TakeTurn(a, GetTurnAction(player2, player1, ct2, 0)));
+                StartCoroutine(TakeTurn(a, GetTurnAction(player2, player1, ct2, 1)));
             }
             else if (ct2 == ControlType.Human)
             {
@@ -211,6 +265,8 @@ public class Controller : MonoBehaviour
     }
     public Action GetActionFromInt(int action, Unit unit)
     {
+        if (unit == player1) actionsUsed[0] = action;
+        else actionsUsed[1] = action;
         switch (action)
         {
             case 0: return unit.GetPhysicalActions().ToArray()[0];
@@ -232,6 +288,7 @@ public class Controller : MonoBehaviour
                 if (random == 0)
                 {
                     random = Random.Range(0, 3);
+                    actionsUsed[playerTurn] = random;
                     return unit.GetPhysicalActions().ToArray()[random];
                 }
                 else
@@ -239,6 +296,7 @@ public class Controller : MonoBehaviour
                     random = Random.Range(0, 4);
                     if (unit.GetMagicalActions().ToArray()[random].GetManaCost() <= unit.GetMana())
                     {
+                        actionsUsed[playerTurn] = random + 3;
                         return unit.GetMagicalActions().ToArray()[random];
                     }
                     else
@@ -250,15 +308,19 @@ public class Controller : MonoBehaviour
                 return unit.GetPhysicalActions().ToArray()[0];
             case ControlType.GeneticPair:
                 return GetActionFromInt(evolution.GetCandidateAction(int.Parse(gameObject.name[4..]), playerTurn, unit, enemy, th), unit);
-            case ControlType.GeneticSolo:
-                return GetActionFromInt(candidate.GetCandidateAction(unit, enemy, th), unit);
+            case ControlType.GeneticSoloBasic:
+                if(playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
+                else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
+            case ControlType.GeneticSoloAdvanced:
+                if (playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
+                else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
         }
         return null;
     }
 
     public IEnumerator TakeTurn(Action unit1Action, Action unit2Action)
     {
-        if(ct1 != ControlType.GeneticPair) Debug.Log(roundNumber.text);
+        if (ct1 != ControlType.GeneticPair) Debug.Log(roundNumber.text);
         if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(false);
         if(ct1 != ControlType.GeneticPair) combatText.gameObject.SetActive(true);
         bool player1First = true;
@@ -311,7 +373,9 @@ public class Controller : MonoBehaviour
             if (hasWinner) { yield break; }
 
         }
-        th.TickEffects();
+        th.TickEffects(player1, player2, actionsUsed[0], actionsUsed[1]);
+        if (player1.GetHealth() == 0) Win(player2, player1);
+        else if (player2.GetHealth() == 0) Win(player1, player2);
         if (playerSelect)
         {
             if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(true);
@@ -324,9 +388,81 @@ public class Controller : MonoBehaviour
         roundRunning = false;
     }
 
+    private void TakeTurnAI(Action unit1Action, Action unit2Action)
+    {
+        if (ct1 != ControlType.GeneticPair) Debug.Log("Round: " + round);
+        if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(false);
+        if (ct1 != ControlType.GeneticPair) combatText.gameObject.SetActive(true);
+        bool player1First = true;
+        if (unit1Action.GetPriority() > unit2Action.GetPriority())
+        {
+            player1First = true;
+        }
+        else if (unit1Action.GetPriority() < unit2Action.GetPriority())
+        {
+            player1First = false;
+        }
+        else
+        {
+            if (player1.GetSpeed() > player2.GetSpeed())
+            {
+                player1First = true;
+            }
+            else if (player1.GetSpeed() < player2.GetSpeed())
+            {
+                player1First = false;
+            }
+            else
+            {
+                switch (Random.Range(0, 2))
+                {
+                    case 0:
+                        player1First = true;
+                        break;
+                    case 1:
+                        player1First = false;
+                        break;
+                }
+            }
+        }
+        if (player1First)
+        {
+            Round(player1, player2, unit1Action);
+            if (hasWinner) { return; }
+            Round(player2, player1, unit2Action);
+            if (hasWinner) { return; }
+        }
+        else
+        {
+            Round(player2, player1, unit2Action);
+            if (hasWinner) { return; }
+            Round(player1, player2, unit1Action);
+            if (hasWinner) { return; ; }
+
+        }
+        th.TickEffects(player1, player2, actionsUsed[0], actionsUsed[1]);
+        if (player1.GetHealth() == 0) Win(player2, player1);
+        else if (player2.GetHealth() == 0) Win(player1, player2);
+        if (playerSelect)
+        {
+            if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(true);
+            if (ct1 != ControlType.Human && ct2 == ControlType.Human) SetButtons(player2);
+            else SetButtons(player1);
+        }
+        if (ct1 != ControlType.GeneticPair) combatText.gameObject.SetActive(false);
+        round++;
+        if (ct1 != ControlType.GeneticPair) roundNumber.text = "Round " + round;
+        roundRunning = false;
+    }
+
     public void Round(Unit caster, Unit enemy, Action action)
     {
-        if (th.CheckForEffect(caster, Effect.Stunned) == -1)
+        if (caster.GetMana() < action.GetManaCost())
+        {
+            if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " no longer has the mana to use " + action.GetActionName();
+            if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " no longer has the mana to use " + action.GetActionName());
+        }
+        else if (th.CheckForEffect(caster, Effect.Stunned) == -1)
         {
             if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " used " + action.GetActionName();
             if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " used " + action.GetActionName());
@@ -379,6 +515,7 @@ public class Controller : MonoBehaviour
         player1.AddMana(player1.GetMaxMana());
         player2.AddHealth(player2.GetMaxHealth());
         player2.AddMana(player2.GetMaxMana());
+        actionsUsed = new int[2];
         roundRunning = false;
     }
 }

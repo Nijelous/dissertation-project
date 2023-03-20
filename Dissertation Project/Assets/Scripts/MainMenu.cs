@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -75,12 +76,10 @@ public class MainMenu : MonoBehaviour
         if(playerSelecting == 1)
         {
             player1 = Instantiate(fighter);
-            DontDestroyOnLoad(player1);
         }
         else
         {
             player2 = Instantiate(fighter);
-            DontDestroyOnLoad(player2);
         }
         if(playerSelecting > playerNumber)
         {
@@ -106,12 +105,10 @@ public class MainMenu : MonoBehaviour
         if (playerSelecting == 1)
         {
             player1 = Instantiate(rogue);
-            DontDestroyOnLoad(player1);
         }
         else
         {
             player2 = Instantiate(rogue);
-            DontDestroyOnLoad(player2);
         }
         if (playerSelecting > playerNumber)
         {
@@ -137,12 +134,10 @@ public class MainMenu : MonoBehaviour
         if (playerSelecting == 1)
         {
             player1 = Instantiate(wizard);
-            DontDestroyOnLoad(player1);
         }
         else
         {
             player2 = Instantiate(wizard);
-            DontDestroyOnLoad(player2);
         }
         if (playerSelecting > playerNumber)
         {
@@ -171,6 +166,7 @@ public class MainMenu : MonoBehaviour
             playerSelecting++;
             classes.SetActive(true);
             prompt.text = "Select Player 2 Class";
+            Debug.Log(player1.GetComponent<Unit>().GetPhysicalActions().ToArray()[0]);
             aiType.SetActive(false);
         }
         else
@@ -180,11 +176,11 @@ public class MainMenu : MonoBehaviour
         }
     }
 
-    public void Genetic()
+    public void GeneticBasic()
     {
         if (playerSelecting == 1)
         {
-            ct1 = ControlType.GeneticSolo;
+            ct1 = ControlType.GeneticSoloBasic;
             playerSelecting++;
             classes.SetActive(true);
             prompt.text = "Select Player 2 Class";
@@ -192,7 +188,24 @@ public class MainMenu : MonoBehaviour
         }
         else
         {
-            ct2 = ControlType.GeneticSolo;
+            ct2 = ControlType.GeneticSoloBasic;
+            Game();
+        }
+    }
+
+    public void GeneticAdvanced()
+    {
+        if (playerSelecting == 1)
+        {
+            ct1 = ControlType.GeneticSoloAdvanced;
+            playerSelecting++;
+            classes.SetActive(true);
+            prompt.text = "Select Player 2 Class";
+            aiType.SetActive(false);
+        }
+        else
+        {
+            ct2 = ControlType.GeneticSoloAdvanced;
             Game();
         }
     }
@@ -201,7 +214,11 @@ public class MainMenu : MonoBehaviour
     {
         carrier.GetComponent<Carrier>().ct1 = ct1;
         carrier.GetComponent<Carrier>().ct2 = ct2;
+        DontDestroyOnLoad(player1);
+        player1.name = player1.GetComponent<Unit>().GetUnitName() + " 1";
         carrier.GetComponent<Carrier>().player1 = player1;
+        DontDestroyOnLoad(player2);
+        player2.name = player2.GetComponent<Unit>().GetUnitName() + " 2";
         carrier.GetComponent<Carrier>().player2 = player2;
         DontDestroyOnLoad(carrier);
         SceneManager.LoadScene(1);

@@ -11,7 +11,7 @@ public class Backstab : Action
         priority = 0;
         type = DTypes.Piercing;
         originalType = type;
-        basePotency = 30;
+        basePotency = 20;
     }
 
     // Update is called once per frame
@@ -23,7 +23,7 @@ public class Backstab : Action
     public override void Act(Unit caster, Unit enemy, TurnHandler th)
     {
         int crit = 0;
-        if (caster.GetSpeed() > enemy.GetSpeed()) crit = 2;
+        if (caster.GetSpeed() > enemy.GetSpeed()) crit = Random.Range(0, 2) == 1 ? 2 : 1;
         else
         {
             crit = Random.Range(0, 20) == 20 ? 2 : 1;

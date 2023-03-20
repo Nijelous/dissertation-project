@@ -8,6 +8,7 @@ public class Rogue : Unit
     protected override void Start()
     {
         base.Start();
+        unitName = "Rogue";
         maxHealth = 80;
         health = maxHealth;
         maxMana = 50;
@@ -15,19 +16,13 @@ public class Rogue : Unit
         speed = 40;
         physDefence = 15;
         magicDefence = 15;
-        strength = 50;
-        magicStrength = 30;
+        strength = 40;
+        magicStrength = 15;
         immunities = new HashSet<DTypes>();
         originalImmunities = new HashSet<DTypes>();
         resistances = new HashSet<DTypes>();
         originalResistances = new HashSet<DTypes>();
         vulnerabilities = new HashSet<DTypes>();
         originalVulnerabilities = new HashSet<DTypes>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
     }
 }

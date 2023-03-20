@@ -8,6 +8,7 @@ public class Fighter : Unit
     protected override void Start()
     {
         base.Start();
+        unitName = "Fighter";
         maxHealth = 100;
         health = maxHealth;
         maxMana = 20;
@@ -15,7 +16,7 @@ public class Fighter : Unit
         speed = 30;
         physDefence = 40;
         magicDefence = 30;
-        strength = 30;
+        strength = 15;
         magicStrength = 10;
         immunities = new HashSet<DTypes>();
         originalImmunities = new HashSet<DTypes>();
@@ -23,11 +24,5 @@ public class Fighter : Unit
         originalResistances = new HashSet<DTypes>();
         vulnerabilities = new HashSet<DTypes>();
         originalVulnerabilities = new HashSet<DTypes>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
