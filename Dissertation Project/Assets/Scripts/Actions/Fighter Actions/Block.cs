@@ -22,8 +22,9 @@ public class Block : Action
     }
     public override void Act(Unit caster, Unit enemy, TurnHandler th)
     {
-        if (!th.AddEffect(caster, Effect.Blocking, 1))
+        if (th.CheckForEffect(caster, Effect.Blocked) == -1)
         {
+            th.AddEffect(caster, Effect.Blocking, 1);
             caster.AddImmunity(DTypes.Bludgeoning);
             caster.AddImmunity(DTypes.Slashing);
             caster.AddImmunity(DTypes.Piercing);

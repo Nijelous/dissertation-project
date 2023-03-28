@@ -14,6 +14,7 @@ public class UnitGraphics : MonoBehaviour
     void Start()
     {
         if(!unit) unit = GetComponent<Unit>();
+        if(!unit) unit = transform.GetChild(0).GetComponent<Unit>();
         if(!bars) bars = gameObject;
     }
 

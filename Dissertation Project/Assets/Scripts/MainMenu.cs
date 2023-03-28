@@ -7,12 +7,6 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     public ControlType ct1;
 
     public ControlType ct2;
@@ -33,13 +27,25 @@ public class MainMenu : MonoBehaviour
 
     public GameObject aiType;
 
+    public GameObject geneticType;
+
+    public GameObject geneticTurnsRemembered;
+
     public Text prompt;
 
     public GameObject carrier;
 
     private int playerNumber;
 
+    private int[] turnsRemembered;
+
     private int playerSelecting = 1;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        turnsRemembered = new int[2];
+    }
 
     // Update is called once per frame
     void Update()
@@ -176,6 +182,13 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    public void Genetic()
+    {
+        geneticType.SetActive(true);
+        prompt.text = "Select Genetic Type";
+        aiType.SetActive(false);
+    }
+
     public void GeneticBasic()
     {
         if (playerSelecting == 1)
@@ -184,7 +197,7 @@ public class MainMenu : MonoBehaviour
             playerSelecting++;
             classes.SetActive(true);
             prompt.text = "Select Player 2 Class";
-            aiType.SetActive(false);
+            geneticType.SetActive(false);
         }
         else
         {
@@ -198,14 +211,72 @@ public class MainMenu : MonoBehaviour
         if (playerSelecting == 1)
         {
             ct1 = ControlType.GeneticSoloAdvanced;
-            playerSelecting++;
-            classes.SetActive(true);
-            prompt.text = "Select Player 2 Class";
-            aiType.SetActive(false);
+            geneticTurnsRemembered.SetActive(true);
+            for(int i = 0; i < 3; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            geneticType.SetActive(false);
         }
         else
         {
             ct2 = ControlType.GeneticSoloAdvanced;
+            geneticTurnsRemembered.SetActive(true);
+            for (int i = 0; i < 3; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            geneticType.SetActive(false);
+        }
+    }
+
+    public void GeneticAdvancedHeuristic()
+    {
+        if (playerSelecting == 1)
+        {
+            ct1 = ControlType.GeneticSoloAdvanced;
+            geneticTurnsRemembered.SetActive(true);
+            for (int i = 0; i < 4; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            geneticType.SetActive(false);
+        }
+        else
+        {
+            ct2 = ControlType.GeneticSoloAdvanced;
+            geneticTurnsRemembered.SetActive(true);
+            for (int i = 0; i < geneticTurnsRemembered.transform.childCount; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            geneticType.SetActive(false);
+        }
+    }
+
+    public void SetTurnsRemembered(int turns)
+    {
+        
+        if(playerSelecting == 1)
+        {
+            turnsRemembered[0] = turns;
+            playerSelecting++;
+            classes.SetActive(true);
+            for (int i = 0; i < geneticTurnsRemembered.transform.childCount; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(false);
+            }
+            prompt.text = "Select Player 2 Class";
+            geneticTurnsRemembered.SetActive(false);
+
+        }
+        else
+        {
+            turnsRemembered[1] = turns;
             Game();
         }
     }
@@ -214,6 +285,7 @@ public class MainMenu : MonoBehaviour
     {
         carrier.GetComponent<Carrier>().ct1 = ct1;
         carrier.GetComponent<Carrier>().ct2 = ct2;
+        carrier.GetComponent<Carrier>().turnsRemembered = turnsRemembered;
         DontDestroyOnLoad(player1);
         player1.name = player1.GetComponent<Unit>().GetUnitName() + " 1";
         carrier.GetComponent<Carrier>().player1 = player1;

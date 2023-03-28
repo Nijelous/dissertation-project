@@ -26,7 +26,8 @@ public class Setup : MonoBehaviour
             player1.GetComponent<UnitGraphics>().SetUnit(c.player1.GetComponent<Unit>());
             c.player2.transform.parent = player2.transform;
             player2.GetComponent<UnitGraphics>().SetUnit(c.player2.GetComponent<Unit>());
-            controller.SetController(c.player1.GetComponent<Unit>(), c.player2.GetComponent<Unit>(), c.ct1, c.ct2, GameObject.Find("TurnHandler").GetComponent<TurnHandler>(), false, 3);
+            controller.SetController(c.player1.GetComponent<Unit>(), c.player2.GetComponent<Unit>(), c.ct1, c.ct2, 
+                GameObject.Find("TurnHandler").GetComponent<TurnHandler>(), false, 3, c.turnsRemembered, 0.5f, 0.25f);
             controller.gameObject.SetActive(true);
             player1.SetActive(true);
             player2.SetActive(true);

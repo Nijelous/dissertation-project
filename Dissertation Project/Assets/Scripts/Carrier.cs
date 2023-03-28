@@ -11,4 +11,6 @@ public class Carrier : MonoBehaviour
     public ControlType ct1;
     
     public ControlType ct2;
+
+    public int[] turnsRemembered;
 }

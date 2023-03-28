@@ -6,6 +6,7 @@ using UnityEngine;
 public enum Effect
 {
     Blocking,
+    Blocked,
     TrueStrike,
     ArmourDown,
     Haste,
@@ -109,6 +110,7 @@ public class TurnHandler : MonoBehaviour
         {
             case Effect.Blocking:
                 effect.unit.ResetImmunities(new List<DTypes>() { DTypes.Slashing, DTypes.Bludgeoning, DTypes.Piercing });
+                AddEffect(effect.unit, Effect.Blocked, 2);
                 break;
             case Effect.TrueStrike:
                 effect.unit.AddStrength(-30);

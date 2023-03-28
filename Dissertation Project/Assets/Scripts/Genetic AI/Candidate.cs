@@ -6,7 +6,8 @@ using UnityEngine;
 public enum CandidateType
 {
     Basic,
-    Advanced
+    Advanced,
+    AdvancedHeuristic
 }
 public class Candidate
 {
@@ -14,20 +15,23 @@ public class Candidate
 
     private readonly int actionCount = 7;
     private readonly int turnsRemembered;
-    private readonly float healthBarCutoff = 0.25f;
-    private readonly float manaBarCutoff = 0.5f;
-    private readonly int maxWeight;
+    private readonly float healthBarCutoff;
+    private readonly float manaBarCutoff;
+    private readonly int maxWeight = 99;
+    private List<int> sectionsUsed;
 
-    public Candidate(CandidateType ct, int turnsRemembered)
+    public Candidate(CandidateType ct, int turnsRemembered, float healthBarCutoff, float manaBarCutoff)
     {
         this.turnsRemembered = turnsRemembered;
+        this.healthBarCutoff = healthBarCutoff;
+        this.manaBarCutoff = manaBarCutoff;
+        int weightCount = 0;
         switch (ct)
         {
             case CandidateType.Basic:
                 weights = new int[13];
                 break;
             case CandidateType.Advanced:
-                int weightCount = 0;
                 if (turnsRemembered == 0) weightCount = actionCount * (int)(Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
                 else {
                     weightCount += actionCount;
@@ -38,74 +42,170 @@ public class Candidate
                 }
                 weights = new int[weightCount];
                 break;
+            case CandidateType.AdvancedHeuristic:
+                if (turnsRemembered == 0) weightCount = actionCount * (int)(Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
+                else
+                {
+                    weightCount += actionCount;
+                    for (int i = 1; i <= turnsRemembered; i++)
+                    {
+                        weightCount += (int)(Mathf.Pow(actionCount, i + 1) * Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
+                    }
+                }
+                weights = new int[weightCount];
+                sectionsUsed = new List<int>();
+                break;
         }
         for (int i = 0; i < weights.Length; i++)
         {
-            weights[i] = Random.Range(0, 100);
+            weights[i] = Random.Range(0, maxWeight+1);
         }
     }
 
     public Candidate(Candidate parent1, Candidate parent2)
     {
-        weights = new int[parent1.GetWeightsLength()];
-        turnsRemembered = parent1.GetTurnsRemembered();
-        for (int i = 0; i < weights.Length; i++)
+        turnsRemembered = parent1.turnsRemembered;
+        healthBarCutoff = parent1.healthBarCutoff;
+        manaBarCutoff = parent1.manaBarCutoff;
+        if (parent1.sectionsUsed == null)
         {
-            switch (Random.Range(0, 2))
+            weights = new int[parent1.weights.Length];
+            for (int i = 0; i < weights.Length; i++)
             {
-                case 0:
-                    weights[i] = parent1.GetWeight(i);
-                    break;
-                case 1:
-                    weights[i] = parent2.GetWeight(i);
-                    break;
+                switch (Random.Range(0, 2))
+                {
+                    case 0:
+                        weights[i] = parent1.weights[i];
+                        break;
+                    case 1:
+                        weights[i] = parent2.weights[i];
+                        break;
+                }
+            }
+        }
+        else
+        {
+            weights = parent1.weights;
+            sectionsUsed = new List<int>();
+            HashSet<int> sections = new();
+            foreach (int i in parent1.sectionsUsed)
+            {
+                sections.Add(i);
+            }
+            foreach (int i in parent2.sectionsUsed)
+            {
+                sections.Add(i);
+            }
+            foreach (int sectionStart in sections)
+            {
+                for(int i = 0; i < actionCount; i++)
+                {
+                    switch (Random.Range(0, 2))
+                    {
+                        case 0:
+                            weights[sectionStart + i] = parent1.weights[sectionStart + i];
+                            break;
+                        case 1:
+                            weights[sectionStart + i] = parent2.weights[sectionStart + i];
+                            break;
+                    }
+                }
             }
         }
     }
 
     public Candidate(Candidate parent1, Candidate parent2, int mutationValue)
     {
-        weights = new int[parent1.GetWeightsLength()];
-        turnsRemembered = parent1.GetTurnsRemembered();
-        for (int i = 0; i < weights.Length; i++)
+        turnsRemembered = parent1.turnsRemembered;
+        healthBarCutoff = parent1.healthBarCutoff;
+        manaBarCutoff = parent1.manaBarCutoff;
+        if (parent1.sectionsUsed == null)
         {
-            switch(Random.Range(0, 6))
+            weights = new int[parent1.weights.Length];
+            for (int i = 0; i < weights.Length; i++)
             {
-                case 0:
-                    weights[i] = parent1.GetWeight(i);
-                    break;
-                case 1:
-                    weights[i] = parent2.GetWeight(i);
-                    break;
-                case 2:
-                    weights[i] = Mathf.Min(parent1.GetWeight(i) + mutationValue, maxWeight);
-                    break;
-                case 3:
-                    weights[i] = Mathf.Min(parent2.GetWeight(i) + mutationValue, maxWeight);
-                    break;
-                case 4:
-                    weights[i] = Mathf.Max(parent1.GetWeight(i) - mutationValue, 0);
-                    break;
-                case 5:
-                    weights[i] = Mathf.Max(parent2.GetWeight(i) - mutationValue, 0);
-                    break;
+                switch (Random.Range(0, 6))
+                {
+                    case 0:
+                        weights[i] = parent1.weights[i];
+                        break;
+                    case 1:
+                        weights[i] = parent2.weights[i];
+                        break;
+                    case 2:
+                        weights[i] = Mathf.Min(parent1.weights[i] + mutationValue, maxWeight);
+                        break;
+                    case 3:
+                        weights[i] = Mathf.Min(parent2.weights[i] + mutationValue, maxWeight);
+                        break;
+                    case 4:
+                        weights[i] = Mathf.Max(parent1.weights[i] - mutationValue, 0);
+                        break;
+                    case 5:
+                        weights[i] = Mathf.Max(parent2.weights[i] - mutationValue, 0);
+                        break;
+                }
+            }
+        }
+        else
+        {
+            weights = parent1.weights;
+            sectionsUsed = new List<int>();
+            HashSet<int> sections = new();
+            foreach (int i in parent1.sectionsUsed)
+            {
+                sections.Add(i);
+            }
+            foreach (int i in parent2.sectionsUsed)
+            {
+                sections.Add(i);
+            }
+            foreach (int sectionStart in sections)
+            {
+                for (int i = 0; i < actionCount; i++)
+                {
+                    switch (Random.Range(0, 2))
+                    {
+                        case 0:
+                            weights[sectionStart + i] = parent1.weights[sectionStart + i];
+                            break;
+                        case 1:
+                            weights[sectionStart + i] = parent2.weights[sectionStart + i];
+                            break;
+                        case 2:
+                            weights[sectionStart + i] = Mathf.Min(parent1.weights[sectionStart + i] + mutationValue, maxWeight);
+                            break;
+                        case 3:
+                            weights[sectionStart + i] = Mathf.Min(parent2.weights[sectionStart + i] + mutationValue, maxWeight);
+                            break;
+                        case 4:
+                            weights[sectionStart + i] = Mathf.Max(parent1.weights[sectionStart + i] - mutationValue, 0);
+                            break;
+                        case 5:
+                            weights[sectionStart + i] = Mathf.Max(parent2.weights[sectionStart + i] - mutationValue, 0);
+                            break;
+                    }
+                }
             }
         }
     }
 
-    public int GetTurnsRemembered()
-    {
-        return turnsRemembered;
-    }
-
-    public Candidate(int[] weights)
+    public Candidate(int[] weights, int turnsRemembered, float healthBarCutoff, float manaBarCutoff)
     {
         this.weights = weights;
+        this.turnsRemembered = turnsRemembered;
+        this.healthBarCutoff = healthBarCutoff;
+        this.manaBarCutoff = manaBarCutoff;
     }
 
     public int GetWeight(int index)
     {
         return weights[index];
+    }
+
+    public int[] GetWeights()
+    {
+        return weights;
     }
 
     public int GetActionWeight(int index)
@@ -202,11 +302,13 @@ public class Candidate
                         {
                             geneSelection += previousActions[j] * (int)(Mathf.Pow(actionCount, i - (j+1)) * healthCutoffs * healthCutoffs * manaCutoffs * manaCutoffs);
                         }
+                        break;
                     }
                 }
             }
             int sectionStart = geneSelection * 7;
-            /*if (sectionStart < 0)
+            sectionsUsed?.Add(sectionStart);
+            if (sectionStart < 0)
             {
                 int[] unitActions = th.GetLastActions(u, 16);
                 string lastActionsUnit = "";
@@ -224,7 +326,7 @@ public class Candidate
                 }
                 Debug.LogError("Unit Name: " + u.GetUnitName() + " Section Start: " + sectionStart + " Weights: " + weights.Length + "\nHealth: " + u.GetHealthPercentage() + " Enemy Health: " + enemy.GetHealthPercentage() +
                     "\nMana: " + u.GetManaPercentage() + " Enemy Mana: " + enemy.GetManaPercentage() + "\nUnit Actions: " + lastActionsUnit + "\nEnemy Actions: " + lastActionsEnemy);
-            }*/
+            }
             for (int i = 0; i < 7; i++)
             {
                 if(i > 2)

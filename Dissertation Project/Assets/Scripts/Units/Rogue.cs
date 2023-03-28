@@ -9,7 +9,7 @@ public class Rogue : Unit
     {
         base.Start();
         unitName = "Rogue";
-        maxHealth = 80;
+        maxHealth = 180;
         health = maxHealth;
         maxMana = 50;
         mana = maxMana;

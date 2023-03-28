@@ -9,7 +9,7 @@ public class Wizard : Unit
     {
         base.Start();
         unitName = "Wizard";
-        maxHealth = 60;
+        maxHealth = 140;
         health = maxHealth;
         maxMana = 100;
         mana = maxMana;

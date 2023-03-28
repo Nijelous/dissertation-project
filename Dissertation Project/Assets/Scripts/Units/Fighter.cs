@@ -9,7 +9,7 @@ public class Fighter : Unit
     {
         base.Start();
         unitName = "Fighter";
-        maxHealth = 100;
+        maxHealth = 250;
         health = maxHealth;
         maxMana = 20;
         mana = maxMana;
