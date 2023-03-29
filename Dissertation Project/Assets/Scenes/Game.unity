@@ -11197,8 +11197,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player1: {fileID: 836180314}
   player2: {fileID: 1130944102}
-  ct1: 5
-  ct2: 1
+  ct1: 4
+  ct2: 5
   turnsRemembered1: 3
   turnsRemembered2: 3
   healthBarCutoff: 0.25

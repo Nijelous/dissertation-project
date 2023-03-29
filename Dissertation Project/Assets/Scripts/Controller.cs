@@ -125,6 +125,8 @@ public class Controller : MonoBehaviour
         count1 = 0;
         count2 = 0;
         actionsUsed = new int[2];
+        string path = Application.dataPath + "/Graphs/Results.csv";
+        File.WriteAllText(path, "");
         if (quickCombat) waitTime = 0.01f;
         if(ct1 == ControlType.GeneticPair)
         {
@@ -633,6 +635,9 @@ public class Controller : MonoBehaviour
                     res += player1.name + " wins: " + wins1 + " | " + player2.name + " wins: " + wins2 + "\n";
                 }
                 Debug.Log(res);
+                string p = Application.dataPath + "/Graphs/Results.csv";
+                if(wins[0] + wins[1] != 100) File.AppendAllText(p, "50,50\n");
+                else File.AppendAllText(p, wins[0] + "," + wins[1] + "\n");
                 bool cont = true;
                 count2++;
                 if(count2 == ciel2)
@@ -704,8 +709,8 @@ public class Controller : MonoBehaviour
                         {
                             path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + ((count1 / 2) + 1);
                         }
-                        if (ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
-                        Debug.Log("Player 1: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation " + ((count2 / 2)+1) + " Player " + ((count2 % 2)+1));
+                        if (ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
+                        Debug.Log("Player 2: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation " + ((count2 / 2)+1) + " Player " + ((count2 % 2)+1));
                         StreamReader sr = new(path);
                         geneString = sr.ReadToEnd();
                         sr.Close();
