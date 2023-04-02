@@ -14,6 +14,7 @@ public enum ControlType
     GeneticPair,
     GeneticSoloBasic,
     GeneticSoloAdvanced,
+    GeneticSoloAdvancedTrainingPartner,
     GeneticSoloAdvancedHeuristic
 }
 public class Controller : MonoBehaviour
@@ -143,15 +144,19 @@ public class Controller : MonoBehaviour
                     break;
                 case ControlType.GeneticSoloBasic:
                     player1.gameObject.name = "Basic";
-                    ciel1 = 6;
+                    ciel1 = 3;
                     break;
                 case ControlType.GeneticSoloAdvanced:
                     player1.gameObject.name = "Advanced " + turnsRemembered1;
-                    ciel1 = 6;
+                    ciel1 = 3;
+                    break;
+                case ControlType.GeneticSoloAdvancedTrainingPartner:
+                    player1.gameObject.name = "Advanced+ " + turnsRemembered1;
+                    ciel1 = 1;
                     break;
                 case ControlType.GeneticSoloAdvancedHeuristic:
                     player1.gameObject.name = "Advanced H " + turnsRemembered1;
-                    ciel1 = 6;
+                    ciel1 = 3;
                     break;
             }
             switch (ct2)
@@ -162,15 +167,19 @@ public class Controller : MonoBehaviour
                     break;
                 case ControlType.GeneticSoloBasic:
                     player2.gameObject.name = "Basic";
-                    ciel2 = 6;
+                    ciel2 = 3;
                     break;
                 case ControlType.GeneticSoloAdvanced:
                     player2.gameObject.name = "Advanced " + turnsRemembered2;
-                    ciel2 = 6;
+                    ciel2 = 3;
+                    break;
+                case ControlType.GeneticSoloAdvancedTrainingPartner:
+                    player2.gameObject.name = "Advanced+ " + turnsRemembered2;
+                    ciel2 = 1;
                     break;
                 case ControlType.GeneticSoloAdvancedHeuristic:
                     player2.gameObject.name = "Advanced H " + turnsRemembered2;
-                    ciel2 = 6;
+                    ciel2 = 3;
                     break;
             }
         }
@@ -196,24 +205,19 @@ public class Controller : MonoBehaviour
                 playerSelect.SetActive(false);
             }
         }
-        if (ct1 == ControlType.GeneticSoloBasic || ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedHeuristic)
+        if (ct1 == ControlType.GeneticSoloBasic ||  ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedTrainingPartner || ct1 == ControlType.GeneticSoloAdvancedHeuristic)
         {
-            string path;
+            
             string geneString;
             string complexity = "";
             if (ct1 == ControlType.GeneticSoloBasic) complexity = "Basic";
             else if (ct1 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+            else if (ct1 == ControlType.GeneticSoloAdvancedTrainingPartner) complexity = "Advanced+";
             else if (ct1 == ControlType.GeneticSoloAdvancedHeuristic) complexity = "AdvancedHeuristic";
-            if (player1.GetUnitName() == player2.GetUnitName())
-            {
-                path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-1-" + set;
-            }
-            else
-            {
-                path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + set;
-            }
-            if (ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered1;
-            Debug.Log("Player 1: " + complexity + (ct1 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered1) : "") + " Generation 1 Player 1");
+            string path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + set;
+            if (ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedTrainingPartner || ct1 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered1;
+            Debug.Log(path);
+            Debug.Log("Player 1: " + complexity + (ct1 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered1) : "") + " Generation 1");
             StreamReader sr = new(path);
             geneString = sr.ReadToEnd();
             sr.Close();
@@ -235,24 +239,17 @@ public class Controller : MonoBehaviour
             }
             candidate1 = new Candidate(genes, turnsRemembered1, healthBarCutoff, manaBarCutoff);
         }
-        if (ct2 == ControlType.GeneticSoloBasic || ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedHeuristic)
+        if (ct2 == ControlType.GeneticSoloBasic || ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedTrainingPartner || ct2 == ControlType.GeneticSoloAdvancedHeuristic)
         {
-            string path;
             string geneString;
             string complexity = "";
             if (ct2 == ControlType.GeneticSoloBasic) complexity = "Basic";
             else if (ct2 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+            else if (ct2 == ControlType.GeneticSoloAdvancedTrainingPartner) complexity = "Advanced+";
             else if (ct2 == ControlType.GeneticSoloAdvancedHeuristic) complexity = "AdvancedHeuristic";
-            if (player1.GetUnitName() == player2.GetUnitName())
-            {
-                path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity + "-1-" + set;
-            }
-            else
-            {
-                path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity + "-" +set;
-            }
-            if (ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
-            Debug.Log("Player 2: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation 1 Player 1");
+            string path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity + "-" + set;
+            if (ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedTrainingPartner || ct2 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
+            Debug.Log("Player 2: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation 1");
             StreamReader sr = new(path);
             geneString = sr.ReadToEnd();
             sr.Close();
@@ -401,6 +398,9 @@ public class Controller : MonoBehaviour
             case ControlType.GeneticSoloAdvanced:
                 if (playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
                 else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
+            case ControlType.GeneticSoloAdvancedTrainingPartner:
+                if (playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
+                else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
             case ControlType.GeneticSoloAdvancedHeuristic:
                 if (playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
                 else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
@@ -496,8 +496,24 @@ public class Controller : MonoBehaviour
 
         }
         th.TickEffects(player1, player2, actionsUsed[0], actionsUsed[1]);
-        if (player1.GetHealth() == 0) Win(player2, player1);
-        else if (player2.GetHealth() == 0) Win(player1, player2);
+        if (player1.GetHealth() == 0)
+        {
+            Win(player2, player1);
+            if (battles < 100)
+            {
+                ResetBattle();
+                Evaluate();
+            }
+        }
+        else if (player2.GetHealth() == 0)
+        {
+            Win(player1, player2);
+            if (battles < 100)
+            {
+                ResetBattle();
+                Evaluate();
+            }
+        }
         if (playerSelect)
         {
             if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(true);
@@ -563,8 +579,24 @@ public class Controller : MonoBehaviour
 
         }
         th.TickEffects(player1, player2, actionsUsed[0], actionsUsed[1]);
-        if (player1.GetHealth() == 0) Win(player2, player1);
-        else if (player2.GetHealth() == 0) Win(player1, player2);
+        if (player1.GetHealth() == 0)
+        {
+            Win(player2, player1);
+            if (battles < 100)
+            {
+                ResetBattle();
+                Evaluate();
+            }
+        }
+        else if (player2.GetHealth() == 0) 
+        { 
+            Win(player1, player2);
+            if (battles < 100)
+            {
+                ResetBattle();
+                Evaluate();
+            }
+        }
         if (playerSelect)
         {
             if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(true);
@@ -598,10 +630,10 @@ public class Controller : MonoBehaviour
             {
                 Win(caster, enemy);
             }
-            else if(round > 200)
+            else if(round > 40)
             {
-                battles = 99;
-                Win(enemy, caster);
+                hasWinner = true;
+                evaluating = false;
             }
         }
         else
@@ -656,22 +688,15 @@ public class Controller : MonoBehaviour
                     results = new int[100];
                     if (ct1 == ControlType.GeneticSoloBasic || ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedHeuristic)
                     {
-                        string path;
                         string geneString;
                         string complexity = "";
                         if (ct1 == ControlType.GeneticSoloBasic) complexity = "Basic";
                         else if (ct1 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+                        else if (ct1 == ControlType.GeneticSoloAdvancedTrainingPartner) complexity = "Advanced+";
                         else if (ct1 == ControlType.GeneticSoloAdvancedHeuristic) complexity = "AdvancedHeuristic";
-                        if (player1.GetUnitName() == player2.GetUnitName())
-                        {
-                            path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + ((count1%2)+1) + "-" + ((count1/2)+1);
-                        }
-                        else
-                        {
-                            path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + ((count1 / 2) + 1);
-                        }
-                        if (ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered1;
-                        Debug.Log("Player 1: " + complexity + (ct1 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered1) : "") + " Generation " + ((count1/2)+1) + " Player " + ((count1%2)+1));
+                        string path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + (count1 + 1);
+                        if (ct1 == ControlType.GeneticSoloAdvanced || ct1 == ControlType.GeneticSoloAdvancedTrainingPartner || ct1 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered1;
+                        Debug.Log("Player 1: " + complexity + (ct1 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered1) : "") + " Generation " + (count1 + 1));
                         StreamReader sr = new(path);
                         geneString = sr.ReadToEnd();
                         sr.Close();
@@ -695,22 +720,15 @@ public class Controller : MonoBehaviour
                     }
                     if (ct2 == ControlType.GeneticSoloBasic || ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedHeuristic)
                     {
-                        string path;
                         string geneString;
                         string complexity = "";
                         if (ct2 == ControlType.GeneticSoloBasic) complexity = "Basic";
                         else if (ct2 == ControlType.GeneticSoloAdvanced) complexity = "Advanced";
+                        else if (ct2 == ControlType.GeneticSoloAdvancedTrainingPartner) complexity = "Advanced+";
                         else if (ct2 == ControlType.GeneticSoloAdvancedHeuristic) complexity = "AdvancedHeuristic";
-                        if (player1.GetUnitName() == player2.GetUnitName())
-                        {
-                            path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + ((count1 % 2) + 1) + "-" + ((count1 / 2) + 1);
-                        }
-                        else
-                        {
-                            path = Application.dataPath + "/Best Candidates/" + player1.GetUnitName() + "-" + player2.GetUnitName() + "-" + complexity + "-" + ((count1 / 2) + 1);
-                        }
-                        if (ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
-                        Debug.Log("Player 2: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation " + ((count2 / 2)+1) + " Player " + ((count2 % 2)+1));
+                        string path = Application.dataPath + "/Best Candidates/" + player2.GetUnitName() + "-" + player1.GetUnitName() + "-" + complexity + "-" + (count1 + 1);
+                        if (ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedTrainingPartner || ct2 == ControlType.GeneticSoloAdvancedHeuristic) path += "-" + turnsRemembered2;
+                        Debug.Log("Player 2: " + complexity + (ct2 != ControlType.GeneticSoloBasic ? (" " + turnsRemembered2) : "") + " Generation " + (count2 + 1));
                         StreamReader sr = new(path);
                         geneString = sr.ReadToEnd();
                         sr.Close();
@@ -730,7 +748,7 @@ public class Controller : MonoBehaviour
                                 j++;
                             }
                         }
-                        candidate2 = new Candidate(genes, turnsRemembered1, healthBarCutoff, manaBarCutoff);
+                        candidate2 = new Candidate(genes, turnsRemembered2, healthBarCutoff, manaBarCutoff);
                     }
 
                 }
@@ -753,8 +771,8 @@ public class Controller : MonoBehaviour
         return round;
     }
 
-    public void ResetBattle()
-    {
+    public void ResetBattle() 
+    { 
         round = 1;
         hasWinner = false;
         player1.AddHealth(player1.GetMaxHealth());

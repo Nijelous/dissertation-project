@@ -12,7 +12,7 @@ public class SecondWind : Action
         priority = 0;
         type = DTypes.Holy;
         originalType = type;
-        basePotency = 25;
+        basePotency = 100;
     }
 
     // Update is called once per frame

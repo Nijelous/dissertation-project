@@ -7,6 +7,7 @@ public enum CandidateType
 {
     Basic,
     Advanced,
+    AdvancedTrainingPartner,
     AdvancedHeuristic
 }
 public class Candidate
@@ -38,6 +39,18 @@ public class Candidate
                     for (int i = 1; i <= turnsRemembered; i++)
                     {
                         weightCount += (int)(Mathf.Pow(actionCount, i+1) * Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
+                    }
+                }
+                weights = new int[weightCount];
+                break;
+            case CandidateType.AdvancedTrainingPartner:
+                if (turnsRemembered == 0) weightCount = actionCount * (int)(Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
+                else
+                {
+                    weightCount += actionCount;
+                    for (int i = 1; i <= turnsRemembered; i++)
+                    {
+                        weightCount += (int)(Mathf.Pow(actionCount, i + 1) * Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
                     }
                 }
                 weights = new int[weightCount];
@@ -127,22 +140,22 @@ public class Candidate
                 switch (Random.Range(0, 6))
                 {
                     case 0:
-                        weights[i] = parent1.weights[i];
-                        break;
-                    case 1:
-                        weights[i] = parent2.weights[i];
-                        break;
-                    case 2:
                         weights[i] = Mathf.Min(parent1.weights[i] + mutationValue, maxWeight);
                         break;
-                    case 3:
+                    case 1:
                         weights[i] = Mathf.Min(parent2.weights[i] + mutationValue, maxWeight);
                         break;
-                    case 4:
+                    case 2:
                         weights[i] = Mathf.Max(parent1.weights[i] - mutationValue, 0);
                         break;
-                    case 5:
+                    case 3:
                         weights[i] = Mathf.Max(parent2.weights[i] - mutationValue, 0);
+                        break;
+                    case 4:
+                        weights[i] = parent1.weights[i];
+                        break;
+                    case 5:
+                        weights[i] = parent2.weights[i];
                         break;
                 }
             }
@@ -308,7 +321,7 @@ public class Candidate
             }
             int sectionStart = geneSelection * 7;
             sectionsUsed?.Add(sectionStart);
-            if (sectionStart < 0)
+            if (sectionStart < 0 || sectionStart > weights.Length)
             {
                 int[] unitActions = th.GetLastActions(u, 16);
                 string lastActionsUnit = "";

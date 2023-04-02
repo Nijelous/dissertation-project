@@ -41,7 +41,7 @@ public class Evolution : MonoBehaviour
     [SerializeField]
     private GameObject setPrefab;
     [SerializeField]
-    private bool quickCombat;
+    private bool pairTraining;
     [SerializeField]
     private float waitTime;
     private List<GameObject> sets;
@@ -53,7 +53,8 @@ public class Evolution : MonoBehaviour
     [SerializeField]
     private int mutationValue;
     [SerializeField]
-    private const float mutationChance = 0.001f;
+    [Range(0, 1)]
+    private float mutationChance = 0.005f;
     private int generationCount = 1;
     private GameObject[] averageWeights;
     private int[] initialAverageWeights;
@@ -79,6 +80,10 @@ public class Evolution : MonoBehaviour
     [Range(1, 3)]
     private int endValue;
     private int geneLength;
+    private int loserPityGeneration1 = 0;
+    private int loserPityGeneration2 = 0;
+    private int survivorCount1;
+    private int survivorCount2;
     // Start is called before the first frame update
     void Awake()
     {
@@ -88,9 +93,11 @@ public class Evolution : MonoBehaviour
         count = 1;
         sets = new List<GameObject>();
         evaluatingSets = new List<GameObject>();
-        fitness = new List<float>(new float[startPopulation]);
+        if(pairTraining) fitness = new List<float>(new float[startPopulation]);
+        else fitness = new List<float>(new float[startPopulation/2]);
+        if (pairTraining) survivorCount2 = 1;
         GenerateCandidates(candidatesP1);
-        GenerateCandidates(candidatesP2);
+        if(pairTraining) GenerateCandidates(candidatesP2);
         lastTotalWeights = 0;
         geneLength = candidatesP1[0].GetWeightsLength();
         if (showEvolution)
@@ -121,7 +128,7 @@ public class Evolution : MonoBehaviour
                     vs.GetComponent<Text>().text = "VS";
                 }
             }
-            else if(candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic)
+            else if(candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic)
             {
                 if(turnsRemembered == 1) dropdownMenu.SetActive(true);
                 GameObject parent = Instantiate(setPrefab, canvas.transform);
@@ -153,10 +160,10 @@ public class Evolution : MonoBehaviour
                 }
             }
             roundNumber.transform.localPosition = candidateType == CandidateType.Basic ? new Vector3(123, 234, 0) : new Vector3(500, 150, 0);
-            if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic) roundNumber.GetComponent<Text>().fontSize = 25;
+            if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic) roundNumber.GetComponent<Text>().fontSize = 25;
             generationNumber = Instantiate(roundNumber, canvas.transform);
             generationNumber.transform.localPosition = candidateType == CandidateType.Basic ? new Vector3(-123, 234, 0) : new Vector3(500, 125, 0);
-            if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic) generationNumber.GetComponent<Text>().fontSize = 20;
+            if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic) generationNumber.GetComponent<Text>().fontSize = 20;
             generationNumber.GetComponent<Text>().text = "Generation " + generationCount;
             player1Bars.SetActive(false);
             player2Bars.SetActive(false);
@@ -177,7 +184,7 @@ public class Evolution : MonoBehaviour
                         averageWeights[i].GetComponent<Text>().text = "0";
                         averageWeights[i].GetComponent<Text>().fontSize = 20;
                     }
-                    else if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic)
+                    else if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic)
                     {
                         int j = i % geneLength;
                         averageWeights[i].GetComponent<RectTransform>().sizeDelta = new Vector2(12, 11);
@@ -204,7 +211,7 @@ public class Evolution : MonoBehaviour
             allAverageChanges = new List<int>();
             changeNumber = Instantiate(roundNumber, canvas.transform);
             changeNumber.GetComponent<Text>().text = "0";
-            if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic && turnsRemembered <= 1)
+            if ((candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic) && turnsRemembered <= 1)
             {
                 changeNumber.transform.localPosition = new Vector3(500, 100, 0);
                 changeNumber.GetComponent<Text>().fontSize = 15;
@@ -272,6 +279,31 @@ public class Evolution : MonoBehaviour
     IEnumerator LateStart()
     {
         yield return new WaitForEndOfFrame();
+        if (!pairTraining)
+        {
+            string path = Application.dataPath + "/Best Candidates/Training Partner " + unit1.GetUnitName() + "-" + unit2.GetUnitName();
+            Debug.Log(path);
+            StreamReader sr = new(path);
+            string geneString = sr.ReadToEnd();
+            sr.Close();
+            int[] genes = new int[geneString.Count(x => x == ' ')];
+            int j = 0;
+            for (int i = 0; i < genes.Length; i++)
+            {
+                bool flag = false;
+                int start = j;
+                while (!flag)
+                {
+                    if (geneString[j] == ' ')
+                    {
+                        flag = true;
+                        genes[i] = int.Parse(geneString[start..j]);
+                    }
+                    j++;
+                }
+            }
+            candidatesP2.Add(new Candidate(genes, 1, healthBarCutoff, manaBarCutoff));
+        }
         foreach (GameObject set in sets)
         {
             Unit u1 = set.transform.GetChild(0).gameObject.AddComponent<Unit>();
@@ -280,7 +312,7 @@ public class Evolution : MonoBehaviour
             Unit u2 = set.transform.GetChild(1).gameObject.AddComponent<Unit>();
             u2.SetAttributes(unit2);
             if (showEvolution && (candidateType == CandidateType.Basic || set.name == "Set 0")) set.transform.GetChild(1).gameObject.AddComponent<UnitGraphics>();
-            set.GetComponent<Controller>().SetController(u1, u2, ControlType.GeneticPair, ControlType.GeneticPair, set.GetComponent<TurnHandler>(), quickCombat, waitTime, new int[] {turnsRemembered, turnsRemembered}, healthBarCutoff, manaBarCutoff);
+            set.GetComponent<Controller>().SetController(u1, u2, ControlType.GeneticPair, ControlType.GeneticPair, set.GetComponent<TurnHandler>(), true, waitTime, new int[] {turnsRemembered, turnsRemembered}, healthBarCutoff, manaBarCutoff);
         }
         if (showEvolution)
         {
@@ -318,21 +350,38 @@ public class Evolution : MonoBehaviour
     {
         for(int i = 0; i < sets.Count; i++)
         {
-            Unit u1 = sets[i].transform.GetChild(0).GetComponent<Unit>();
-            Unit u2 = sets[i].transform.GetChild(1).GetComponent<Unit>();
-            if (u1.GetHealth() == 0)
+            if (pairTraining)
             {
-                fitness[i] = 0;
-                fitness[i + (startPopulation/2)] = 100;
-            }
-            else if(u2.GetHealth() == 0) {
-                fitness[i + (startPopulation / 2)] = 0;
-                fitness[i] = 100;
+                Unit u1 = sets[i].transform.GetChild(0).GetComponent<Unit>();
+                Unit u2 = sets[i].transform.GetChild(1).GetComponent<Unit>();
+                if (u1.GetHealth() == 0)
+                {
+                    fitness[i] = 0;
+                    fitness[i + (startPopulation / 2)] = 100;
+                }
+                else if (u2.GetHealth() == 0)
+                {
+                    fitness[i + (startPopulation / 2)] = 0;
+                    fitness[i] = 100;
+                }
+                else
+                {
+                    fitness[i] = 0;
+                    fitness[i + (startPopulation / 2)] = 0;
+                }
             }
             else
             {
-                fitness[i] = 0;
-                fitness[i + (startPopulation / 2)] = 0;
+                Unit u1 = sets[i].transform.GetChild(0).GetComponent<Unit>();
+                Unit u2 = sets[i].transform.GetChild(1).GetComponent<Unit>();
+                if (u2.GetHealth() == 0)
+                {
+                    fitness[i] = u1.GetHealth();
+                }
+                else 
+                {
+                    fitness[i] = 0;
+                }
             }
         }
     }
@@ -349,16 +398,24 @@ public class Evolution : MonoBehaviour
             }
         }
         QuickSort(0, candidatesP1.Count-1);
-        for (int i = 0; i < candidatesP2.Count; i++)
+        survivorCount1 += candidatesP1.Count;
+        survivorCount1 /= 2;
+        if (pairTraining)
         {
-            if (fitness[i+candidatesP1.Count] == 0)
+            for (int i = 0; i < candidatesP2.Count; i++)
             {
-                candidatesP2.RemoveAt(i);
-                fitness.RemoveAt(i+candidatesP1.Count);
-                i--;
+                if (fitness[i + candidatesP1.Count] == 0)
+                {
+                    candidatesP2.RemoveAt(i);
+                    fitness.RemoveAt(i + candidatesP1.Count);
+                    i--;
+                }
             }
+            QuickSort(candidatesP1.Count, candidatesP2.Count - 1);
+            survivorCount2 += candidatesP2.Count;
+            survivorCount2 /= 2;
         }
-        QuickSort(candidatesP1.Count, candidatesP2.Count - 1);
+        // Debug.Log("Candidate 1s Remaining: " + candidatesP1.Count + " Candidate 2s Remaining: " + candidatesP2.Count);
     }
 
     private void QuickSort(int left, int right)
@@ -394,38 +451,66 @@ public class Evolution : MonoBehaviour
         }
     }
 
-    private void Reproduce(List<Candidate> candidates)
+    private void Reproduce(List<Candidate> candidates, int candidate)
     {
-        List<Candidate> oldCandidates = new List<Candidate>(candidates);
+        List<Candidate> oldCandidates = new(candidates);
         candidates.Clear();
-        if(oldCandidates.Count == 0)
+        if(oldCandidates.Count <= 1 || ((candidate == 1 ? survivorCount1 : survivorCount2) < (pairTraining ? 10 : (generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2))/75) && generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2) > 100))
         {
+            if (candidate == 1) loserPityGeneration1 = generationCount;
+            else loserPityGeneration2 = generationCount;
             GenerateCandidates(candidates);
             return;
         }
-        int reverseCount = oldCandidates.Count-1;
+        /*int reverseCount = oldCandidates.Count-1;
         for(int i = 0; i < startPopulation/2; i++)
         {
-            switch (Random.Range(0f, 1f))
+            float rand = Random.Range(0f, 1f);
+            if(rand < mutationChance)
             {
-                case mutationChance:
-                    if (reverseCount == 0)
-                    {
-                        candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1], mutationValue));
-                        reverseCount = oldCandidates.Count;
-                    }
-                    else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1], mutationValue));
-                    break;
-                default:
-                    if (reverseCount == 0)
-                    {
-                        candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1]));
-                        reverseCount = oldCandidates.Count;
-                    }
-                    else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1]));
-                    break;
+                if (reverseCount == 0)
+                {
+                    candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1], mutationValue));
+                    reverseCount = oldCandidates.Count;
+                }
+                else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1], mutationValue));
+            }
+            else
+            {
+                if (reverseCount == 0)
+                {
+                    candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1]));
+                    reverseCount = oldCandidates.Count;
+                }
+                else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1]));
             }
             reverseCount--;
+        }*/
+        int index = oldCandidates.Count - 1;
+        int children = 0;
+        int mate = oldCandidates.Count - 2;
+        while(candidates.Count < startPopulation/2)
+        {
+            if(children > fitness[index] / 10)
+            {
+                children = 0;
+                index--;
+                if (index < 0) index = oldCandidates.Count - 1;
+                mate = index - 1;
+                if (mate < 0) mate = oldCandidates.Count - 1;
+            }
+            float mutation = Random.Range(0f, 1f);
+            if(mutation < mutationChance)
+            {
+                candidates.Add(new Candidate(oldCandidates[index], oldCandidates[mate], mutationValue));
+            }
+            else
+            {
+                candidates.Add(new Candidate(oldCandidates[index], oldCandidates[mate]));
+            }
+            children++;
+            mate--;
+            if (mate < 0) mate = oldCandidates.Count - 1;
         }
     }
 
@@ -435,7 +520,7 @@ public class Evolution : MonoBehaviour
         int previousAverageWeightsTotal = 0;
         if (turnsRemembered <= 1 || candidateType == CandidateType.Basic)
         {
-            for (int i = 0; i < averageWeights.Length; i++)
+            for (int i = 0; i < (pairTraining ? averageWeights.Length : averageWeights.Length/2); i++)
             {
                 previousAverageWeightsTotal += int.Parse(averageWeights[i].GetComponent<Text>().text);
                 List<Candidate> candidates;
@@ -465,7 +550,7 @@ public class Evolution : MonoBehaviour
         else
         {
             previousAverageWeightsTotal = lastTotalWeights;
-            for (int i = 0; i < startPopulation; i++)
+            for (int i = 0; i < (pairTraining ? startPopulation : startPopulation / 2); i++)
             {
                 currentAverageWeightsTotal += i < startPopulation / 2 ? candidatesP1[i].GetWeights().AsParallel().Sum() : candidatesP2[i-(startPopulation/2)].GetWeights().AsParallel().Sum();
             }
@@ -485,7 +570,7 @@ public class Evolution : MonoBehaviour
         {
             averageLastFive += i;
         }
-        if (averageLastFive <= 1)
+        if (averageLastFive <= mutationValue && generationCount > 500 && (pairTraining || survivorCount1 >= 49))
         {
             bestFound = true;
         }
@@ -506,7 +591,8 @@ public class Evolution : MonoBehaviour
                 if (candidateType == CandidateType.Basic)
                 {
                     set.transform.GetChild(0).name = candidatesP1[i].GetWeightsAsString();
-                    set.transform.GetChild(1).name = candidatesP2[i++].GetWeightsAsString();
+                    if (pairTraining) set.transform.GetChild(1).name = candidatesP2[i++].GetWeightsAsString();
+                    else set.transform.GetChild(1).name = "Best";
                 }
                 else
                 {
@@ -527,6 +613,7 @@ public class Evolution : MonoBehaviour
         else if (unit == 1) candidates = candidatesP2;
         if(set < 50 && unit < 2)
         {
+            if (unit == 1 && !pairTraining) return candidates[0].GetCandidateAction(u, enemy, th);
             return candidates[set].GetCandidateAction(u, enemy, th);
         }
         return 0;
@@ -575,9 +662,10 @@ public class Evolution : MonoBehaviour
             {
                 FindFitness();
                 SortPopulation();
-                Reproduce(candidatesP1);
-                Reproduce(candidatesP2);
-                fitness = new List<float>(new float[startPopulation]);
+                Reproduce(candidatesP1, 1);
+                if (pairTraining) Reproduce(candidatesP2, 2);
+                if(pairTraining) fitness = new List<float>(new float[startPopulation]);
+                else fitness = new List<float>(new float[startPopulation/2]);
                 generationCount++;
                 if (showEvolution)
                 {
@@ -590,51 +678,65 @@ public class Evolution : MonoBehaviour
 
     private void BestFound()
     {
+        int bestPlayer = 0;
+        if(survivorCount1 > survivorCount2)
+        {
+            bestPlayer = 0;
+        }
+        else
+        {
+            bestPlayer = 1;
+        }
         if (candidateType == CandidateType.Basic)
         {
-            Debug.Log("Player 1 Weights: " + unit1.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[0] + " | "
-                + unit1.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[1] + " | "
-                + unit1.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[2] + " | "
-                + unit1.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[3] + " | "
-                + unit1.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[4] + " | "
-                + unit1.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[5] + " | "
-                + unit1.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[6] + " | "
-                + "Damage Priority" + " " + lastAverageWeights[7] + " | "
-                + "Healing Priority" + " " + lastAverageWeights[8] + " | "
-                + "Mana Regen Priority" + " " + lastAverageWeights[9] + " | "
-                + "Buff Priority" + " " + lastAverageWeights[10] + " | "
-                + "Status Effect Priority" + " " + lastAverageWeights[11] + " | "
-                + "Applied Effect Priority" + " " + lastAverageWeights[12] + " | ");
-
-            Debug.Log("Player 2 Weights: " + unit2.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[13] + " | "
-                + unit2.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[14] + " | "
-                + unit2.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[15] + " | "
-                + unit2.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[16] + " | "
-                + unit2.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[17] + " | "
-                + unit2.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[18] + " | "
-                + unit2.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[19] + " | "
-                + "Damage Priority" + " " + lastAverageWeights[20] + " | "
-                + "Healing Priority" + " " + lastAverageWeights[21] + " | "
-                + "Mana Regen Priority" + " " + lastAverageWeights[22] + " | "
-                + "Buff Priority" + " " + lastAverageWeights[23] + " | "
-                + "Status Effect Priority" + " " + lastAverageWeights[24] + " | "
-                + "Applied Effect Priority" + " " + lastAverageWeights[25] + " | ");
+            if (bestPlayer == 0)
+            {
+                Debug.Log("Player 1 Weights: " + unit1.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[0] + " | "
+                    + unit1.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[1] + " | "
+                    + unit1.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[2] + " | "
+                    + unit1.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[3] + " | "
+                    + unit1.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[4] + " | "
+                    + unit1.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[5] + " | "
+                    + unit1.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[6] + " | "
+                    + "Damage Priority" + " " + lastAverageWeights[7] + " | "
+                    + "Healing Priority" + " " + lastAverageWeights[8] + " | "
+                    + "Mana Regen Priority" + " " + lastAverageWeights[9] + " | "
+                    + "Buff Priority" + " " + lastAverageWeights[10] + " | "
+                    + "Status Effect Priority" + " " + lastAverageWeights[11] + " | "
+                    + "Applied Effect Priority" + " " + lastAverageWeights[12] + " | ");
+            }
+            else
+            {
+                Debug.Log("Player 2 Weights: " + unit2.GetPhysicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[13] + " | "
+                    + unit2.GetPhysicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[14] + " | "
+                    + unit2.GetPhysicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[15] + " | "
+                    + unit2.GetMagicalActions().ToArray()[0].GetActionName() + " " + lastAverageWeights[16] + " | "
+                    + unit2.GetMagicalActions().ToArray()[1].GetActionName() + " " + lastAverageWeights[17] + " | "
+                    + unit2.GetMagicalActions().ToArray()[2].GetActionName() + " " + lastAverageWeights[18] + " | "
+                    + unit2.GetMagicalActions().ToArray()[3].GetActionName() + " " + lastAverageWeights[19] + " | "
+                    + "Damage Priority" + " " + lastAverageWeights[20] + " | "
+                    + "Healing Priority" + " " + lastAverageWeights[21] + " | "
+                    + "Mana Regen Priority" + " " + lastAverageWeights[22] + " | "
+                    + "Buff Priority" + " " + lastAverageWeights[23] + " | "
+                    + "Status Effect Priority" + " " + lastAverageWeights[24] + " | "
+                    + "Applied Effect Priority" + " " + lastAverageWeights[25] + " | ");
+            }
         }
         else
         {
             Debug.Log("Done");
             if (turnsRemembered > 1) {
-                for (int i = 0; i < lastAverageWeights.Length; i++)
+                List<Candidate> candidates = bestPlayer == 0 ? candidatesP1 : candidatesP2;
+                int offset = bestPlayer == 0 ? 0 : lastAverageWeights.Length / 2;
+                for (int i = 0; i < lastAverageWeights.Length/2; i++)
                 {
-                    List<Candidate> candidates;
-                    candidates = i < lastAverageWeights.Length / 2 ? candidatesP1 : candidatesP2;
                     int total = 0;
                     for (int j = 0; j < startPopulation / 2; j++)
                     {
                         total += candidates[j].GetWeight(i % (lastAverageWeights.Length / 2));
                     }
                     total /= startPopulation / 2;
-                    lastAverageWeights[i] = total;
+                    lastAverageWeights[i+offset] = total;
                 }
             }
         }
@@ -643,20 +745,25 @@ public class Evolution : MonoBehaviour
         string complexity = "";
         if (candidateType == CandidateType.Basic) complexity = "Basic";
         else if (candidateType == CandidateType.Advanced) complexity = "Advanced";
+        else if (candidateType == CandidateType.AdvancedTrainingPartner) complexity = "Advanced+";
         else if (candidateType == CandidateType.AdvancedHeuristic) complexity = "AdvancedHeuristic";
         if (unit1.GetUnitName() == unit2.GetUnitName())
         {
-            path1 = Application.dataPath + "/Best Candidates/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity + "-1-" + count;
-            path2 = Application.dataPath + "/Best Candidates/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + complexity + "-2-" + count;
+            path1 = Application.dataPath + "/Best Candidates/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity + "-" + count;
+            path2 = "";
         }
         else
         {
             path1 = Application.dataPath + "/Best Candidates/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity + "-" + count;
             path2 = Application.dataPath + "/Best Candidates/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + complexity + "-" + count;
         }
-        if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedHeuristic) { path1 += "-" + turnsRemembered; path2 += "-" + turnsRemembered; }
-        File.WriteAllText(path1, GetBestWeightsAsString(0));
-        File.WriteAllText(path2, GetBestWeightsAsString(1));
+        if (candidateType == CandidateType.Advanced || candidateType == CandidateType.AdvancedTrainingPartner || candidateType == CandidateType.AdvancedHeuristic) { path1 += "-" + turnsRemembered; path2 += "-" + turnsRemembered; }
+        if (path2.Length < 10) File.WriteAllText(path1, GetBestWeightsAsString(bestPlayer));
+        else
+        {
+            File.WriteAllText(path1, GetBestWeightsAsString(0));
+            if (pairTraining) File.WriteAllText(path2, GetBestWeightsAsString(1));
+        }
         float time = Time.time - lastTime;
         lastTime = Time.time;
         Debug.Log("Time taken: " + time);
@@ -692,13 +799,13 @@ public class Evolution : MonoBehaviour
         if(count <= endValue)
         {
             candidatesP1.Clear();
-            candidatesP2.Clear();
+            if (pairTraining) candidatesP2.Clear();
             allAverageChanges.Clear();
             totalAverageChanges.Clear();
             initialAverageWeights = new int[geneLength * 2];
             lastAverageWeights = new int[geneLength * 2];
             GenerateCandidates(candidatesP1);
-            GenerateCandidates(candidatesP2);
+            if (pairTraining) GenerateCandidates(candidatesP2);
             generationCount = 1;
             for(int i = 0; i < averageWeights.Length; i++) 
             {
