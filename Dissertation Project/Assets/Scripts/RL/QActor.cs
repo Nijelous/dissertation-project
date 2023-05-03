@@ -16,6 +16,7 @@ public class QActor
     private List<float> enemyHealthValues;
     private List<float> enemyManaValues;
     private List<int> actionsUsed;
+    private List<int> positiveEffects;
     private List<int> qValuesUsed;
 
     public QActor(int turnsRemembered, float healthBarCutoff, float manaBarCutoff)
@@ -28,6 +29,7 @@ public class QActor
         enemyHealthValues = new();
         enemyManaValues = new();
         actionsUsed = new();
+        positiveEffects = new();
         qValuesUsed = new();
         int tableSize = 0;
         if (turnsRemembered == 0) tableSize = actionCount * (int)(Mathf.Pow(1f / healthBarCutoff, 2) * Mathf.Pow(1f / manaBarCutoff, 2));
@@ -125,6 +127,7 @@ public class QActor
         manaValues.Add(u.GetManaPercentage());
         enemyHealthValues.Add(enemy.GetHealthPercentage());
         enemyManaValues.Add(enemy.GetManaPercentage());
+        positiveEffects.Add(th.GetPositiveEffects(u, enemy));
         int setSelection;
         if (previousActions.Length == 0 && turnsRemembered > 0) setSelection = 0;
         else
@@ -220,30 +223,68 @@ public class QActor
         manaValues.Add(u.GetManaPercentage());
         enemyHealthValues.Add(enemy.GetHealthPercentage());
         enemyManaValues.Add(enemy.GetManaPercentage());
-        for(int i = 0; i < qValuesUsed.Count; i++)
+        positiveEffects.Add(0);
+        for(int i = qValuesUsed.Count-1; i >= 0; i--)
         {
+            /*Debug.Log("qValue: " + qValuesUsed[i] + 
+                "\nEnemy Health: " + enemyHealthValues[i] + " || Enemy Health After: " + enemyHealthValues[i + 1] +
+                "\nEnemy Mana: " + enemyManaValues[i] + " || Enemy Mana After: " + enemyManaValues[i + 1] +
+                "\nHealth: " + healthValues[i] + " || Health After: " + healthValues[i + 1] +
+                "\nMana: " + manaValues[i] + " || Mana After: " + manaValues[i + 1]);*/
             float oldValue = (1 - learningRate)*qTable[qValuesUsed[i]];
             float reward = (enemyHealthValues[i] - enemyHealthValues[i + 1]) * 100 - (healthValues[i] - healthValues[i + 1]) * 100 
-                + (enemyManaValues[i] - enemyManaValues[i + 1]) * 25 - (manaValues[i] - manaValues[i + 1]) * 25;
+                + (enemyManaValues[i] - enemyManaValues[i + 1]) * 25 - (manaValues[i] - manaValues[i + 1]) * 25 + positiveEffects[i+1] * 25;
             float nextValue = 0;
-            if (enemyHealthValues[i + 1] == 0) nextValue = 100;
-            else if (healthValues[i + 1] == 0) nextValue = -100;
+            if (enemyHealthValues[i + 1] == 0) nextValue = 300;
+            else if (healthValues[i + 1] == 0) nextValue = -enemy.GetHealth();
             else
             {
-                for(int j = 0; j < 7; j++)
+                for (int j = 0; j < 7; j++)
                 {
                     float value = qTable[qValuesUsed[i + 1] - actionsUsed[i + 1] + j];
                     if (value > nextValue) nextValue = value;
                 }
             }
+            if (i >= 1 && healthValues[i] > healthValues[i + 1] && enemyHealthValues[i] <= enemyHealthValues[i + 1] && actionsUsed[i - 1] == actionsUsed[i])
+            {
+                /*Debug.Log("Actions: " + actionsUsed[i-1] + " " + actionsUsed[i] + 
+                    "\nEnemy Health: " + enemyHealthValues[i] + " || Enemy Health After: " + enemyHealthValues[i + 1] +
+                    "\nEnemy Mana: " + enemyManaValues[i] + " || Enemy Mana After: " + enemyManaValues[i + 1] +
+                    "\nHealth: " + healthValues[i] + " || Health After: " + healthValues[i + 1] +
+                    "\nMana: " + manaValues[i] + " || Mana After: " + manaValues[i + 1]);*/
+                nextValue -= 100;
+            }
+            
             qTable[qValuesUsed[i]] = (int)(oldValue + (learningRate * (reward + (discountRate * nextValue))));
-            Debug.Log(qTable[qValuesUsed[i]]);
         }
         healthValues.Clear();
         manaValues.Clear();
         enemyHealthValues.Clear();
         enemyManaValues.Clear();
         actionsUsed.Clear();
+        positiveEffects.Clear();
         qValuesUsed.Clear();
+    }
+
+    public void PrintQTable()
+    {
+        string s = "";
+        for(int i = 0; i < qTable.Length; i++)
+        {
+            if (i % 49 == 0) s += "\n";
+            else if (i % 7 == 0) s += " || ";
+            s += "" + qTable[i] + " ";
+        }
+        Debug.Log(s);
+    }
+
+    public string GetQTable()
+    {
+        string s = "";
+        for(int i = 0; i < qTable.Length; i++)
+        {
+            s += "" + qTable[i] + " ";
+        }
+        return s;
     }
 }

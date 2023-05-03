@@ -33,7 +33,7 @@ public class ArmourCrush : Action
 
         if(!th.AddEffect(enemy, Effect.ArmourDown, 4))
         {
-            enemy.AddPhysDefence(-20);
+            enemy.AddPhysDefence(-enemy.GetPhysDefence()/2);
         }
     }
 

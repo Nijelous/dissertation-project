@@ -74,6 +74,7 @@ public class Evolution : MonoBehaviour
     [SerializeField]
     [Range(0, 1)]
     private float manaBarCutoff;
+    [SerializeField]
     private int count;
     private float lastTime;
     [SerializeField]
@@ -90,7 +91,6 @@ public class Evolution : MonoBehaviour
         lastTime = 0;
         candidatesP1 = new List<Candidate>();
         candidatesP2 = new List<Candidate>();
-        count = 1;
         sets = new List<GameObject>();
         evaluatingSets = new List<GameObject>();
         if(pairTraining) fitness = new List<float>(new float[startPopulation]);
@@ -415,7 +415,7 @@ public class Evolution : MonoBehaviour
             survivorCount2 += candidatesP2.Count;
             survivorCount2 /= 2;
         }
-        // Debug.Log("Candidate 1s Remaining: " + candidatesP1.Count + " Candidate 2s Remaining: " + candidatesP2.Count);
+        Debug.Log("Candidate 1s Remaining: " + candidatesP1.Count + " Candidate 2s Remaining: " + candidatesP2.Count);
     }
 
     private void QuickSort(int left, int right)
@@ -455,7 +455,7 @@ public class Evolution : MonoBehaviour
     {
         List<Candidate> oldCandidates = new(candidates);
         candidates.Clear();
-        if(oldCandidates.Count <= 1 || ((candidate == 1 ? survivorCount1 : survivorCount2) < (pairTraining ? 10 : (generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2))/75) && generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2) > 100))
+        if(oldCandidates.Count <= 1 || ((candidate == 1 ? survivorCount1 : survivorCount2) < (pairTraining ? 5 : (generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2))/75) && generationCount-(candidate == 1 ? loserPityGeneration1 : loserPityGeneration2) > 100))
         {
             if (candidate == 1) loserPityGeneration1 = generationCount;
             else loserPityGeneration2 = generationCount;
@@ -570,7 +570,7 @@ public class Evolution : MonoBehaviour
         {
             averageLastFive += i;
         }
-        if (averageLastFive <= mutationValue && generationCount > 500 && (pairTraining || survivorCount1 >= 49))
+        if (averageLastFive <= mutationValue && generationCount > 500 && (pairTraining || survivorCount1 >= 49) && (unit1.GetUnitName() == unit2.GetUnitName() || (survivorCount1 > 15 && survivorCount2 > 15)))
         {
             bestFound = true;
         }

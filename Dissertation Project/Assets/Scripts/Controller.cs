@@ -15,7 +15,10 @@ public enum ControlType
     GeneticSoloBasic,
     GeneticSoloAdvanced,
     GeneticSoloAdvancedTrainingPartner,
-    GeneticSoloAdvancedHeuristic
+    GeneticSoloAdvancedHeuristic,
+    Reinforcement,
+    ReinforcementVsAll,
+    ReinforcementLearning
 }
 public class Controller : MonoBehaviour
 {
@@ -76,11 +79,19 @@ public class Controller : MonoBehaviour
 
     private Evolution evolution;
 
+    private Training training;
+
     private bool evaluating = true;
+
+    private bool logging = false;
 
     private Candidate candidate1;
 
     private Candidate candidate2;
+
+    private QActor actor1;
+
+    private QActor actor2;
 
     private int[] actionsUsed;
 
@@ -102,6 +113,9 @@ public class Controller : MonoBehaviour
 
     private int ciel2;
 
+    private string combatLog;
+
+
     public void SetController(Unit player1, Unit player2, ControlType ct1, ControlType ct2, TurnHandler th, bool quickCombat, float waitTime, int[] turnsRemembered, float healthBarCutoff, float manaBarCutoff)
     {
         this.player1 = player1;
@@ -115,6 +129,22 @@ public class Controller : MonoBehaviour
         turnsRemembered2 = turnsRemembered[1];
         this.healthBarCutoff = healthBarCutoff;
         this.manaBarCutoff = manaBarCutoff;
+    }
+
+    public void SetController(Unit player1, Unit player2, ControlType ct1, ControlType ct2, TurnHandler th, bool quickCombat, float waitTime, int[] turnsRemembered, float healthBarCutoff, float manaBarCutoff, Training training)
+    {
+        this.player1 = player1;
+        this.player2 = player2;
+        this.ct1 = ct1;
+        this.ct2 = ct2;
+        this.th = th;
+        this.quickCombat = quickCombat;
+        if (quickCombat) this.waitTime = waitTime;
+        turnsRemembered1 = turnsRemembered[0];
+        turnsRemembered2 = turnsRemembered[1];
+        this.healthBarCutoff = healthBarCutoff;
+        this.manaBarCutoff = manaBarCutoff;
+        this.training = training;
     }
 
     // Start is called before the first frame update
@@ -158,6 +188,14 @@ public class Controller : MonoBehaviour
                     player1.gameObject.name = "Advanced H " + turnsRemembered1;
                     ciel1 = 3;
                     break;
+                case ControlType.Reinforcement:
+                    player1.gameObject.name = "Q " + turnsRemembered1;
+                    ciel1 = 1;
+                    break;
+                case ControlType.ReinforcementVsAll:
+                    player1.gameObject.name = "QVsAll " + turnsRemembered1;
+                    ciel1 = 1;
+                    break;
             }
             switch (ct2)
             {
@@ -180,6 +218,14 @@ public class Controller : MonoBehaviour
                 case ControlType.GeneticSoloAdvancedHeuristic:
                     player2.gameObject.name = "Advanced H " + turnsRemembered2;
                     ciel2 = 3;
+                    break;
+                case ControlType.Reinforcement:
+                    player2.gameObject.name = "Q " + turnsRemembered2;
+                    ciel2 = 1;
+                    break;
+                case ControlType.ReinforcementVsAll:
+                    player2.gameObject.name = "QVsAll " + turnsRemembered2;
+                    ciel2 = 1;
                     break;
             }
         }
@@ -239,6 +285,36 @@ public class Controller : MonoBehaviour
             }
             candidate1 = new Candidate(genes, turnsRemembered1, healthBarCutoff, manaBarCutoff);
         }
+        else if(ct1 == ControlType.Reinforcement || ct1 == ControlType.ReinforcementVsAll)
+        {
+            string tableString;
+            string p2 = "";
+            if (ct1 == ControlType.Reinforcement) p2 = player2.GetUnitName();
+            if (ct1 == ControlType.ReinforcementVsAll) p2 = "All";
+            string path = Application.dataPath + "/Best Actors/" + player1.GetUnitName() + "-" + p2 + "-" + turnsRemembered1;
+            Debug.Log(path);
+            Debug.Log("Player 1: Reinforcement Vs " + p2 + " Turns Remembered " + turnsRemembered1);
+            StreamReader sr = new(path);
+            tableString = sr.ReadToEnd();
+            sr.Close();
+            int[] table = new int[tableString.Count(x => x == ' ')];
+            int j = 0;
+            for (int i = 0; i < table.Length; i++)
+            {
+                bool flag = false;
+                int start = j;
+                while (!flag)
+                {
+                    if (tableString[j] == ' ')
+                    {
+                        flag = true;
+                        table[i] = int.Parse(tableString[start..j]);
+                    }
+                    j++;
+                }
+            }
+            actor1 = new QActor(table, turnsRemembered1, healthBarCutoff, manaBarCutoff);
+        }
         if (ct2 == ControlType.GeneticSoloBasic || ct2 == ControlType.GeneticSoloAdvanced || ct2 == ControlType.GeneticSoloAdvancedTrainingPartner || ct2 == ControlType.GeneticSoloAdvancedHeuristic)
         {
             string geneString;
@@ -271,6 +347,36 @@ public class Controller : MonoBehaviour
             }
             candidate2 = new Candidate(genes, turnsRemembered2, healthBarCutoff, manaBarCutoff);
         }
+        else if (ct2 == ControlType.Reinforcement || ct2 == ControlType.ReinforcementVsAll)
+        {
+            string tableString;
+            string p2 = "";
+            if (ct1 == ControlType.Reinforcement) p2 = player1.GetUnitName();
+            if (ct1 == ControlType.ReinforcementVsAll) p2 = "All";
+            string path = Application.dataPath + "/Best Actors/" + player2.GetUnitName() + "-" + p2 + "-" + turnsRemembered2;
+            Debug.Log(path);
+            Debug.Log("Player 2: Reinforcement Vs " + p2 + " Turns Remembered " + turnsRemembered2);
+            StreamReader sr = new(path);
+            tableString = sr.ReadToEnd();
+            sr.Close();
+            int[] table = new int[tableString.Count(x => x == ' ')];
+            int j = 0;
+            for (int i = 0; i < table.Length; i++)
+            {
+                bool flag = false;
+                int start = j;
+                while (!flag)
+                {
+                    if (tableString[j] == ' ')
+                    {
+                        flag = true;
+                        table[i] = int.Parse(tableString[start..j]);
+                    }
+                    j++;
+                }
+            }
+            actor2 = new QActor(table, turnsRemembered2, healthBarCutoff, manaBarCutoff);
+        }
         roundRunning = false;
     }
 
@@ -281,7 +387,7 @@ public class Controller : MonoBehaviour
         {
             // AI vs AI
             roundRunning = true;
-            if (ct1 == ControlType.GeneticPair) TakeTurnAI(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1));
+            if (ct1 == ControlType.GeneticPair || ct1 == ControlType.ReinforcementLearning) TakeTurnAI(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1));
             else StartCoroutine(TakeTurn(GetTurnAction(player1, player2, ct1, 0), GetTurnAction(player2, player1, ct2, 1)));
         }
     }
@@ -404,6 +510,14 @@ public class Controller : MonoBehaviour
             case ControlType.GeneticSoloAdvancedHeuristic:
                 if (playerTurn == 0) return GetActionFromInt(candidate1.GetCandidateAction(unit, enemy, th), unit);
                 else return GetActionFromInt(candidate2.GetCandidateAction(unit, enemy, th), unit);
+            case ControlType.ReinforcementLearning:
+                return GetActionFromInt(training.GetAction(playerTurn, unit, enemy), unit);
+            case ControlType.Reinforcement:
+                if (playerTurn == 0) return GetActionFromInt(actor1.GetActorAction(unit, enemy, th), unit);
+                else return GetActionFromInt(actor2.GetActorAction(unit, enemy, th), unit);
+            case ControlType.ReinforcementVsAll:
+                if (playerTurn == 0) return GetActionFromInt(actor1.GetActorAction(unit, enemy, th), unit);
+                else return GetActionFromInt(actor2.GetActorAction(unit, enemy, th), unit);
         }
         return null;
     }
@@ -528,9 +642,9 @@ public class Controller : MonoBehaviour
 
     private void TakeTurnAI(Action unit1Action, Action unit2Action)
     {
-        if (ct1 != ControlType.GeneticPair) Debug.Log("Round: " + round);
+        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning) Debug.Log("Round: " + round);
         if (ct1 == ControlType.Human || ct2 == ControlType.Human) playerSelect.SetActive(false);
-        if (ct1 != ControlType.GeneticPair) combatText.gameObject.SetActive(true);
+        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning) combatText.gameObject.SetActive(true);
         bool player1First = true;
         if (unit1Action.GetPriority() > unit2Action.GetPriority())
         {
@@ -582,20 +696,10 @@ public class Controller : MonoBehaviour
         if (player1.GetHealth() == 0)
         {
             Win(player2, player1);
-            if (battles < 100)
-            {
-                ResetBattle();
-                Evaluate();
-            }
         }
         else if (player2.GetHealth() == 0) 
         { 
             Win(player1, player2);
-            if (battles < 100)
-            {
-                ResetBattle();
-                Evaluate();
-            }
         }
         if (playerSelect)
         {
@@ -603,21 +707,24 @@ public class Controller : MonoBehaviour
             if (ct1 != ControlType.Human && ct2 == ControlType.Human) SetButtons(player2);
             else SetButtons(player1);
         }
-        if (ct1 != ControlType.GeneticPair) combatText.gameObject.SetActive(false);
+        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning) combatText.gameObject.SetActive(false);
         round++;
         if (ct1 != ControlType.GeneticPair) roundNumber.text = "Round " + round;
         roundRunning = false;
+        if (logging) combatLog += "\nHealth " + (int)(player1.GetHealthPercentage() * 100) + " || " + (int)(player2.GetHealthPercentage() * 100) + " Enemy Health\n";
     }
 
     public void Round(Unit caster, Unit enemy, Action action)
     {
         if (caster.GetMana() < action.GetManaCost())
         {
+            if(logging) combatLog += "" + caster.name + " no longer has the mana to use " + action.GetActionName() + " || ";
             if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " no longer has the mana to use " + action.GetActionName();
             // if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " no longer has the mana to use " + action.GetActionName());
         }
         else if (th.CheckForEffect(caster, Effect.Stunned) == -1)
         {
+            if (logging) combatLog += "" + caster.name + " used " + action.GetActionName() + " || ";
             if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " used " + action.GetActionName();
             // if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " used " + action.GetActionName());
             caster.AddMana(-action.GetManaCost());
@@ -638,6 +745,7 @@ public class Controller : MonoBehaviour
         }
         else
         {
+            if (logging) combatLog += "" + caster.name + " is Stunned, and cannot move || ";
             if (ct1 != ControlType.GeneticPair) combatText.text = "" + caster.name + " is Stunned, and cannot move";
             // if (ct1 != ControlType.GeneticPair) Debug.Log(caster.name + " is Stunned, and cannot move");
         }
@@ -646,10 +754,12 @@ public class Controller : MonoBehaviour
     public void Win(Unit winner, Unit loser)
     {
         // if (ct1 != ControlType.GeneticPair) Debug.Log(winner.name + " Wins");
+        if(logging) combatLog += "\nHealth " + (int)(player1.GetHealthPercentage() * 100) + " || " + (int)(player2.GetHealthPercentage() * 100) + " Enemy Health";
         th.ClearEffects();
         hasWinner = true;
         evaluating = false;
-        if (ct1 != ControlType.GeneticPair)
+        logging = false;
+        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning)
         {
             if (winner == player1) { wins[0]++; results[battles] = 1; }
             else if (winner == player2) { wins[1]++; results[battles] = 2; }
@@ -759,6 +869,17 @@ public class Controller : MonoBehaviour
     public void Evaluate()
     {
         evaluating = true;
+    }
+
+    public void TestCurrentState()
+    {
+        logging = true;
+        combatLog = "Health 100 || 100 Enemy Health\n";
+    }
+
+    public string GetCombatLog()
+    {
+        return combatLog;
     }
 
     public bool FinishedEvaluating(int maxRounds)

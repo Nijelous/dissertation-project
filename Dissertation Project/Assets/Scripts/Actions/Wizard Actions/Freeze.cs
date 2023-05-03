@@ -33,7 +33,7 @@ public class Freeze : Action
 
         if (th.CheckForEffect(enemy, Effect.StunResist) == -1)
         {
-            int duration = Random.Range(1, 4);
+            int duration = Random.Range(2, 4);
             th.AddEffect(enemy, Effect.Stunned, duration);
         }
     }

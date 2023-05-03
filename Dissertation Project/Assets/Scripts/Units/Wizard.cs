@@ -14,7 +14,7 @@ public class Wizard : Unit
         maxMana = 100;
         mana = maxMana;
         speed = 35;
-        physDefence = 15;
+        physDefence = 20;
         magicDefence = 15;
         strength = 10;
         magicStrength = 45;

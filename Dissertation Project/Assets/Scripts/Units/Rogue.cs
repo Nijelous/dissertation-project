@@ -14,7 +14,7 @@ public class Rogue : Unit
         maxMana = 50;
         mana = maxMana;
         speed = 40;
-        physDefence = 15;
+        physDefence = 20;
         magicDefence = 15;
         strength = 40;
         magicStrength = 15;

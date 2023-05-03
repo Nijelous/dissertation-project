@@ -61,7 +61,7 @@ public class TurnHandler : MonoBehaviour
             effects[i].turns--;
             if (effects[i].effect == Effect.Poisoned)
             {
-                effects[i].unit.Damage(5, DTypes.Null, this);
+                effects[i].unit.Damage(10, DTypes.Null, this);
             }
             if (effects[i].turns == 0)
             {
@@ -120,7 +120,7 @@ public class TurnHandler : MonoBehaviour
                 }
                 break;
             case Effect.ArmourDown:
-                effect.unit.AddPhysDefence(20);
+                effect.unit.AddPhysDefence(effect.unit.GetPhysDefence());
                 break;
             case Effect.Haste:
                 effect.unit.AddSpeed(-15);
@@ -187,5 +187,56 @@ public class TurnHandler : MonoBehaviour
             }
             return result;
         }
+    }
+
+    public int GetPositiveEffects(Unit unit, Unit enemy)
+    {
+        int count = 0;
+        foreach(UnitEffect e in effects)
+        {
+            if(e.unit == unit)
+            {
+                switch (e.effect)
+                {
+                    case Effect.TrueStrike:
+                        count++;
+                        break;
+                    case Effect.Haste:
+                        count++;
+                        break;
+                    case Effect.MagicWard:
+                        count++;
+                        break;
+                    case Effect.PoisonBlade:
+                        count++;
+                        break;
+                    case Effect.Evasion:
+                        count++;
+                        break;
+                    case Effect.Ingenuity:
+                        count++;
+                        break;
+                }
+            }
+            else if (e.unit == enemy)
+            {
+                switch (e.effect)
+                {
+                    case Effect.ArmourDown:
+                        count++;
+                        break;
+                    case Effect.Poisoned:
+                        count++;
+                        break;
+                    case Effect.WeaknessMarked:
+                        count++;
+                        break;
+                    case Effect.Stunned:
+                        count++;
+                        break;
+                }
+            }
+        }
+        return count;
     }
 }
