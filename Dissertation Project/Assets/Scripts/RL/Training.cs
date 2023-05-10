@@ -241,7 +241,28 @@ public class Training : MonoBehaviour
         string path;
         if(trainVsAll) path = Application.dataPath + "/Best Actors/" + unit1.GetUnitName() + "-All-" + turnsRemembered;
         else path = Application.dataPath + "/Best Actors/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + turnsRemembered;
-        if (mastersBeaten == masters) File.WriteAllText(path, actor.GetQTable());
+        if (mastersBeaten == masters)
+        {
+            File.WriteAllText(path, actor.GetQTable());
+            path = Application.dataPath + "/Results/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + (trainVsAll ? "Q+" : "Q");
+            if (File.Exists(path))
+            {
+                File.AppendAllText(path, "Episodes: " + setNumber + " Time Taken: " + lastTime + " " + turnsRemembered + "\n");
+            }
+            else
+            {
+                path = Application.dataPath + "/Results/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + (trainVsAll ? "Q+" : "Q");
+                if (File.Exists(path))
+                {
+                    File.AppendAllText(path, "Episodes: " + setNumber + " Time Taken: " + lastTime + " " + turnsRemembered + "\n");
+                }
+                else
+                {
+                    File.WriteAllText(path, "Episodes: " + setNumber + " Time Taken: " + lastTime + " " + turnsRemembered + "\n");
+                }
+            }
+
+        }
         if (trainVsAll)
         {
             explorationRate = Mathf.Min(explorationRate + 0.5f, 1);

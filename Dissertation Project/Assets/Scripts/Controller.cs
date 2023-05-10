@@ -289,7 +289,7 @@ public class Controller : MonoBehaviour
         {
             string tableString;
             string p2 = "";
-            if (ct1 == ControlType.Reinforcement) p2 = player2.GetUnitName();
+            if (ct1 == ControlType.Reinforcement) p2 = player1.GetUnitName();
             if (ct1 == ControlType.ReinforcementVsAll) p2 = "All";
             string path = Application.dataPath + "/Best Actors/" + player1.GetUnitName() + "-" + p2 + "-" + turnsRemembered1;
             Debug.Log(path);
@@ -351,8 +351,8 @@ public class Controller : MonoBehaviour
         {
             string tableString;
             string p2 = "";
-            if (ct1 == ControlType.Reinforcement) p2 = player1.GetUnitName();
-            if (ct1 == ControlType.ReinforcementVsAll) p2 = "All";
+            if (ct2 == ControlType.Reinforcement) p2 = player2.GetUnitName();
+            if (ct2 == ControlType.ReinforcementVsAll) p2 = "All";
             string path = Application.dataPath + "/Best Actors/" + player2.GetUnitName() + "-" + p2 + "-" + turnsRemembered2;
             Debug.Log(path);
             Debug.Log("Player 2: Reinforcement Vs " + p2 + " Turns Remembered " + turnsRemembered2);
@@ -383,6 +383,12 @@ public class Controller : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(hasWinner && (ct1 == ControlType.Human || ct2 == ControlType.Human || battles >= 100))
+        {
+            combatText.gameObject.SetActive(true);
+            if (player1.GetHealth() > 0) combatText.text = "Player 1 " + player1.GetUnitName() + " Wins!";
+            else combatText.text = "Player 2 " + player2.GetUnitName() + " Wins!";
+        }
         if (ct1 != ControlType.Human && ct2 != ControlType.Human &&  evaluating && !roundRunning && !hasWinner)
         {
             // AI vs AI
@@ -564,7 +570,7 @@ public class Controller : MonoBehaviour
             yield return new WaitForSeconds(waitTime);
             if (hasWinner)
             {
-                if (battles < 100)
+                if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
                 {
                     ResetBattle();
                     Evaluate();
@@ -575,7 +581,7 @@ public class Controller : MonoBehaviour
             yield return new WaitForSeconds(waitTime);
             if (hasWinner)
             {
-                if (battles < 100)
+                if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
                 {
                     ResetBattle();
                     Evaluate();
@@ -589,7 +595,7 @@ public class Controller : MonoBehaviour
             yield return new WaitForSeconds(waitTime);
             if (hasWinner) 
             {
-                if (battles < 100)
+                if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
                 {
                     ResetBattle();
                     Evaluate();
@@ -600,7 +606,7 @@ public class Controller : MonoBehaviour
             yield return new WaitForSeconds(waitTime);
             if (hasWinner) 
             {
-                if (battles < 100)
+                if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
                 {
                     ResetBattle();
                     Evaluate();
@@ -613,7 +619,7 @@ public class Controller : MonoBehaviour
         if (player1.GetHealth() == 0)
         {
             Win(player2, player1);
-            if (battles < 100)
+            if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
             {
                 ResetBattle();
                 Evaluate();
@@ -622,7 +628,7 @@ public class Controller : MonoBehaviour
         else if (player2.GetHealth() == 0)
         {
             Win(player1, player2);
-            if (battles < 100)
+            if (battles < 100 && ct1 != ControlType.Human && ct2 != ControlType.Human)
             {
                 ResetBattle();
                 Evaluate();
@@ -759,7 +765,7 @@ public class Controller : MonoBehaviour
         hasWinner = true;
         evaluating = false;
         logging = false;
-        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning)
+        if (ct1 != ControlType.GeneticPair && ct1 != ControlType.ReinforcementLearning && ct1 != ControlType.Human && ct2 != ControlType.Human)
         {
             if (winner == player1) { wins[0]++; results[battles] = 1; }
             else if (winner == player2) { wins[1]++; results[battles] = 2; }

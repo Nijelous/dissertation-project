@@ -462,30 +462,6 @@ public class Evolution : MonoBehaviour
             GenerateCandidates(candidates);
             return;
         }
-        /*int reverseCount = oldCandidates.Count-1;
-        for(int i = 0; i < startPopulation/2; i++)
-        {
-            float rand = Random.Range(0f, 1f);
-            if(rand < mutationChance)
-            {
-                if (reverseCount == 0)
-                {
-                    candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1], mutationValue));
-                    reverseCount = oldCandidates.Count;
-                }
-                else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1], mutationValue));
-            }
-            else
-            {
-                if (reverseCount == 0)
-                {
-                    candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[oldCandidates.Count - 1]));
-                    reverseCount = oldCandidates.Count;
-                }
-                else candidates.Add(new Candidate(oldCandidates[reverseCount], oldCandidates[reverseCount - 1]));
-            }
-            reverseCount--;
-        }*/
         int index = oldCandidates.Count - 1;
         int children = 0;
         int mate = oldCandidates.Count - 2;
@@ -770,18 +746,18 @@ public class Evolution : MonoBehaviour
         string path = Application.dataPath + "/Results/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity;
         if (File.Exists(path))
         {
-            File.AppendAllText(path, "Generations: " + generationCount + " Time Taken: " + time + "\n");
+            File.AppendAllText(path, "Generations: " + generationCount + " Time Taken: " + time + " " + turnsRemembered + "\n");
         }
         else
         {
             path = Application.dataPath + "/Results/" + unit2.GetUnitName() + "-" + unit1.GetUnitName() + "-" + complexity;
             if (File.Exists(path))
             {
-                File.AppendAllText(path, "Generations: " + generationCount + " Time Taken: " + time + "\n");
+                File.AppendAllText(path, "Generations: " + generationCount + " Time Taken: " + time + " " + turnsRemembered + "\n");
             }
             else
             {
-                File.WriteAllText(path, "Generations: " + generationCount + " Time Taken: " + time + "\n");
+                File.WriteAllText(path, "Generations: " + generationCount + " Time Taken: " + time + " " + turnsRemembered + "\n");
             }
         }
         path = Application.dataPath + "/Graphs/" + unit1.GetUnitName() + "-" + unit2.GetUnitName() + "-" + complexity + ".csv";

@@ -189,6 +189,32 @@ public class MainMenu : MonoBehaviour
         aiType.SetActive(false);
     }
 
+    public void ReinforcementLearning()
+    {
+        if (playerSelecting == 1)
+        {
+            ct1 = ControlType.Reinforcement;
+            geneticTurnsRemembered.SetActive(true);
+            for (int i = 0; i < 3; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            aiType.SetActive(false);
+        }
+        else
+        {
+            ct2 = ControlType.Reinforcement;
+            geneticTurnsRemembered.SetActive(true);
+            for (int i = 0; i < 3; i++)
+            {
+                geneticTurnsRemembered.transform.GetChild(i).gameObject.SetActive(true);
+            }
+            prompt.text = "Select How Many Turns You Want the AI to Remember";
+            aiType.SetActive(false);
+        }
+    }
+
     public void GeneticBasic()
     {
         if (playerSelecting == 1)
